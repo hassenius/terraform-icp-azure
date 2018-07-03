@@ -1,0 +1,95 @@
+#Virtual Network
+resource "azurerm_virtual_network" "icp_vnet" {
+  name                = "${var.virtual_network_name}"
+  location            = "${var.location}"
+  address_space       = "${var.address_spaces}"
+  resource_group_name = "${azurerm_resource_group.icp.name}"
+}
+#Route Table
+resource "azurerm_route_table" "routetb" {
+  name                = "${var.route_table_name}"
+  location            = "${var.location}"
+  resource_group_name = "${azurerm_resource_group.icp.name}"
+}
+#Subnetwork
+resource "azurerm_subnet" "subnet" {
+  name                 = "${var.subnet_name}"
+  virtual_network_name = "${azurerm_virtual_network.icp_vnet.name}"
+  resource_group_name  = "${azurerm_resource_group.icp.name}"
+  address_prefix       = "${var.subnet_prefix}"
+  route_table_id       = "${azurerm_route_table.routetb.id}"
+}
+
+
+#Public IP
+resource "azurerm_public_ip" "master_pip" {
+  count                        = "${var.master["nodes"]}"
+  name                         = "${var.master["name"]}-pip-${count.index}"
+  location                     = "${var.location}"
+  resource_group_name          = "${azurerm_resource_group.icp.name}"
+  public_ip_address_allocation = "Static"
+  domain_name_label            = "${var.cluster_name}-${var.master["name"]}-${count.index}"
+}
+resource "azurerm_public_ip" "proxy_pip" {
+  count                        = "${var.proxy["nodes"]}"
+  name                         = "${var.proxy["name"]}-pip-${count.index}"
+  location                     = "${var.location}"
+  resource_group_name          = "${azurerm_resource_group.icp.name}"
+  public_ip_address_allocation = "Static"
+  domain_name_label            = "${var.cluster_name}-${var.proxy["name"]}-${count.index}"
+}
+#Network Interface
+resource "azurerm_network_interface" "master_nic" {
+  count               = "${var.master["nodes"]}"
+  name                = "${var.master["name"]}-nic-${count.index}"
+  location            = "${var.location}"
+  resource_group_name = "${azurerm_resource_group.icp.name}"
+  network_security_group_id = "${azurerm_network_security_group.master_sg.id}"
+
+  ip_configuration {
+    name                          = "${var.master["name"]}-ipcfg-${count.index}"
+    subnet_id                     = "${azurerm_subnet.subnet.id}"
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = "${element(azurerm_public_ip.master_pip.*.id, count.index)}"
+  }
+}
+resource "azurerm_network_interface" "proxy_nic" {
+  count               = "${var.proxy["nodes"]}"
+  name                = "${var.proxy["name"]}-nic-${count.index}"
+  location            = "${var.location}"
+  resource_group_name = "${azurerm_resource_group.icp.name}"
+  network_security_group_id = "${azurerm_network_security_group.proxy_sg.id}"
+
+  ip_configuration {
+    name                          = "${var.proxy["name"]}-ipcfg-${count.index}"
+    subnet_id                     = "${azurerm_subnet.subnet.id}"
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = "${element(azurerm_public_ip.proxy_pip.*.id, count.index)}"
+  }
+}
+resource "azurerm_network_interface" "management_nic" {
+  count               = "${var.management["nodes"]}"
+  name                = "${var.management["name"]}-nic-${count.index}"
+  location            = "${var.location}"
+  resource_group_name = "${azurerm_resource_group.icp.name}"
+  network_security_group_id = "${azurerm_network_security_group.worker_sg.id}"
+
+  ip_configuration {
+    name                          = "${var.management["name"]}-ipcfg-${count.index}"
+    subnet_id                     = "${azurerm_subnet.subnet.id}"
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+resource "azurerm_network_interface" "worker_nic" {
+  count               = "${var.worker["nodes"]}"
+  name                = "${var.worker["name"]}-nic-${count.index}"
+  location            = "${var.location}"
+  resource_group_name = "${azurerm_resource_group.icp.name}"
+  network_security_group_id = "${azurerm_network_security_group.worker_sg.id}"
+
+  ip_configuration {
+    name                          = "${var.worker["name"]}-ipcfg-${count.index}"
+    subnet_id                     = "${azurerm_subnet.subnet.id}"
+    private_ip_address_allocation = "Dynamic"
+  }
+}
