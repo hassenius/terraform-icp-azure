@@ -38,7 +38,7 @@ module "icpprovision" {
 
   generate_key = true
 
-  ssh_user  = "icpdeploy"
-  ssh_key   = "${tls_private_key.installkey.private_key_pem}"
+  ssh_user         = "icpdeploy"
+  ssh_key_base64   = "${base64encode(tls_private_key.installkey.private_key_pem)}"
 
 }

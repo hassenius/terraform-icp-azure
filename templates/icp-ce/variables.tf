@@ -56,9 +56,15 @@ variable "storage_replication_type" {
   description = "Defines the Replication Type to use for this storage account. Valid options include LRS, GRS etc."
   default     = "LRS"
 }
-variable ssh_public_key {
+variable "ssh_public_key" {
     description = "SSH Public Key"
     default = ""
+}
+
+variable "disable_password_authentication" {
+  description = "Whether to enable or disable ssh password authentication for the created Azure VMs. Default: true"
+  default     = "true"
+
 }
 variable "os_image" {
   description = "Select from Ubuntu (ubuntu) or RHEL (rhel) for the Operating System"
@@ -81,7 +87,7 @@ variable "os_image_map" {
   }
 }
 variable "admin_username" {
-  description = "administrator user name"
+  description = "linux vm administrator user name"
   default     = "vmadmin"
 }
 /*
@@ -108,7 +114,7 @@ variable "icpadmin_password" {
 }
 variable "icp_version" {
     description = "ICP Version"
-    default = "2.1.0.1"
+    default = "2.1.0.3"
 }
 variable "cluster_name" {
   description = "Deployment name for resources prefix"

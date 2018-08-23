@@ -42,8 +42,11 @@ EOF
   }
 
   os_profile_linux_config {
-    disable_password_authentication = true
-
+    disable_password_authentication = "${var.disable_password_authentication}"
+    ssh_keys {
+      key_data = "${var.ssh_public_key}"
+      path = "/home/${var.admin_username}/.ssh/authorized_keys"
+    }
   }
 }
 
@@ -90,7 +93,11 @@ EOF
   }
 
   os_profile_linux_config {
-    disable_password_authentication = true
+    disable_password_authentication = "${var.disable_password_authentication}"
+    ssh_keys {
+      key_data = "${var.ssh_public_key}"
+      path = "/home/${var.admin_username}/.ssh/authorized_keys"
+    }
   }
 }
 
@@ -136,7 +143,11 @@ EOF
   }
 
   os_profile_linux_config {
-    disable_password_authentication = true
+    disable_password_authentication = "${var.disable_password_authentication}"
+    ssh_keys {
+      key_data = "${var.ssh_public_key}"
+      path = "/home/${var.admin_username}/.ssh/authorized_keys"
+    }
   }
 }
 
@@ -184,7 +195,10 @@ EOF
   }
 
   os_profile_linux_config {
-    disable_password_authentication = true
-
+    disable_password_authentication = "${var.disable_password_authentication}"
+    ssh_keys {
+      key_data = "${var.ssh_public_key}"
+      path = "/home/${var.admin_username}/.ssh/authorized_keys"
+    }
   }
 }
