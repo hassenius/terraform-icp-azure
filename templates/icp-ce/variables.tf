@@ -31,11 +31,6 @@ variable "virtual_network_name" {
   description = "The name for the virtual network."
   default     = "vnet"
 }
-variable "address_spaces" {
-  type = "list"
-  description = "The address space that is used by the virtual network. You can supply more than one address space. Changing this forces a new resource to be created."
-  default     = ["172.16.0.0/16","10.1.0.0/16","10.0.0.0/24"]
-}
 variable "route_table_name" {
   description = "The name for the route table."
   default     = "icp_route"
@@ -96,9 +91,7 @@ variable "admin_password" {
   default = ""
 }
 */
-variable "ssh_key_name" {
-  default = "az-icp"
-}
+
 ##### ICP Configurations ######
 variable "network_cidr" {
   description = "ICP Network CIDR"
