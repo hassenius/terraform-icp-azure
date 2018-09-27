@@ -86,7 +86,7 @@ module "icpprovision" {
       # Cluster configuration for controller manager
       "cluster_conf" = {
           "location"      = "${azurerm_resource_group.icp.location}"
-          "subnetName"    = "${"azurerm_subnet.container_subnet.name}"
+          "subnetName"    = "${azurerm_subnet.container_subnet.name}"
           "securityGroupName" = "" # used to be myicp-master-sg by try empty
           "vnetName"      = "${azurerm_virtual_network.icp_vnet.name}"
           "vnetResourceGroup" = "${azurerm_resource_group.icp.name}"
