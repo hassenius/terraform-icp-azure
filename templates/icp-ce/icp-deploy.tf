@@ -6,10 +6,10 @@
 # TODO: Add azure-disk and azure-file volumes
 # TODO: Separate vmadmin key and icpdeploy key
 
-data "template_file" "azure_provider_config" {
-  template = "${file("azure-config.json.tpl")}"
-
-}
+# data "template_file" "azure_provider_config" {
+#   template = "${file("azure-config.json.tpl")}"
+#
+# }
 
 data "azurerm_client_config" "client_config" {}
 
