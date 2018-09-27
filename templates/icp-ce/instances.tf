@@ -1,34 +1,13 @@
 
+# TODO: Implement tags like we have in aws terraform
+data "template_cloudinit_config" "config" {
+  gzip          = true
+  base64_encode = true
 
-##################################
-## Create Master VM
-##################################
-resource "azurerm_virtual_machine" "master" {
-  count                 = "${var.master["nodes"]}"
-  name                  = "${var.master["name"]}-${count.index}"
-  location              = "${var.location}"
-  resource_group_name   = "${azurerm_resource_group.icp.name}"
-  vm_size               = "${var.master["vm_size"]}"
-  network_interface_ids = ["${element(azurerm_network_interface.master_nic.*.id, count.index)}"]
-
-  storage_image_reference {
-    publisher = "${lookup(var.os_image_map, join("_publisher", list(var.os_image, "")))}"
-    offer     = "${lookup(var.os_image_map, join("_offer", list(var.os_image, "")))}"
-    sku       = "${lookup(var.os_image_map, join("_sku", list(var.os_image, "")))}"
-    version   = "${lookup(var.os_image_map, join("_version", list(var.os_image, "")))}"
-  }
-
-  storage_os_disk {
-    name              = "${var.master["name"]}-osdisk-${count.index}"
-    managed_disk_type = "Standard_LRS"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-  }
-
-  os_profile {
-    computer_name  = "${var.master["name"]}-${count.index}"
-    admin_username = "${var.admin_username}"
-    custom_data    = <<EOF
+  # Create the icpdeploy user which we will use during initial deployment of ICP.
+  part {
+    content_type = "text/cloud-config"
+    content      =  <<EOF
 #cloud-config
 users:
   - default
@@ -39,6 +18,102 @@ users:
     ssh-authorized-keys:
       - ${tls_private_key.installkey.public_key_openssh}
 EOF
+  }
+
+  # Setup the docker disk
+  part {
+    content_type = "text/x-shellscript"
+    content      = <<EOF
+#!/bin/bash
+sudo mkdir -p /var/lib/docker
+# sudo parted -s -a optimal /dev/sdc mklabel gpt -- mkpart primary xfs 1 -1
+
+# sudo partprobe
+umount /mnt
+mount /dev/sdb1 /var/lib/docker
+sudo sed -i 's|/mnt|/var/lib/docker|' /etc/fstab
+#sudo mkfs.xfs -n ftype=1 /dev/sdc1
+#echo "/dev/sdc1  /var/lib/docker   xfs  defaults   0 0" | sudo tee -a /etc/fstab
+#sudo mount -a
+EOF
+  }
+}
+
+
+
+##################################
+## Create Availability Sets
+##################################
+
+
+resource "azurerm_availability_set" "controlplane" {
+  name                = "controlpane_availabilityset"
+  location            = "${azurerm_resource_group.icp.location}"
+  resource_group_name = "${azurerm_resource_group.icp.name}"
+  managed             = true
+
+  tags {
+    environment = "Production"
+  }
+}
+
+resource "azurerm_availability_set" "workers" {
+  name                = "workers_availabilityset"
+  location            = "${azurerm_resource_group.icp.location}"
+  resource_group_name = "${azurerm_resource_group.icp.name}"
+  managed             = true
+
+  tags {
+    environment = "Production"
+  }
+}
+
+
+##################################
+## Create Master VM
+##################################
+resource "azurerm_virtual_machine" "master" {
+  count                 = "${var.master["nodes"]}"
+  name                  = "${var.master["name"]}${count.index + 1}"
+  location              = "${var.location}"
+  resource_group_name   = "${azurerm_resource_group.icp.name}"
+  vm_size               = "${var.master["vm_size"]}"
+  network_interface_ids = ["${element(azurerm_network_interface.master_nic.*.id, count.index)}"]
+
+  # The SystemAssigned identity enables the Azure Cloud Provider to use ManagedIdentityExtension
+  identity = {
+    type = "SystemAssigned"
+  }
+
+  availability_set_id = "${azurerm_availability_set.controlplane.id}"
+
+  storage_image_reference {
+    publisher = "${lookup(var.os_image_map, join("_publisher", list(var.os_image, "")))}"
+    offer     = "${lookup(var.os_image_map, join("_offer", list(var.os_image, "")))}"
+    sku       = "${lookup(var.os_image_map, join("_sku", list(var.os_image, "")))}"
+    version   = "${lookup(var.os_image_map, join("_version", list(var.os_image, "")))}"
+  }
+
+  storage_os_disk {
+    name              = "${var.master["name"]}-osdisk-${count.index + 1}"
+    managed_disk_type = "${var.master["os_disk_type"]}"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+  }
+
+  # storage_data_disk {
+  #   name              = "${var.master["name"]}-dockerdisk-${count.index + 1}"
+  #   managed_disk_type = "${var.master["docker_disk_type"]}"
+  #   disk_size_gb      = "${var.master["docker_disk_size"]}"
+  #   caching           = "ReadWrite"
+  #   create_option     = "Empty"
+  #   lun               = 1
+  # }
+
+  os_profile {
+    computer_name  = "${var.master["name"]}${count.index + 1}"
+    admin_username = "${var.admin_username}"
+    custom_data    = "${data.template_cloudinit_config.config.rendered}"
   }
 
   os_profile_linux_config {
@@ -56,11 +131,18 @@ EOF
 ##################################
 resource "azurerm_virtual_machine" "proxy" {
   count                 = "${var.proxy["nodes"]}"
-  name                  = "${var.proxy["name"]}-${count.index}"
+  name                  = "${var.proxy["name"]}${count.index + 1}"
   location              = "${var.location}"
   resource_group_name   = "${azurerm_resource_group.icp.name}"
   vm_size               = "${var.proxy["vm_size"]}"
   network_interface_ids = ["${element(azurerm_network_interface.proxy_nic.*.id, count.index)}"]
+
+  # The SystemAssigned identity enables the Azure Cloud Provider to use ManagedIdentityExtension
+  identity = {
+    type = "SystemAssigned"
+  }
+
+  availability_set_id = "${azurerm_availability_set.controlplane.id}"
 
   storage_image_reference {
     publisher = "${lookup(var.os_image_map, join("_publisher", list(var.os_image, "")))}"
@@ -70,26 +152,25 @@ resource "azurerm_virtual_machine" "proxy" {
   }
 
   storage_os_disk {
-    name              = "${var.proxy["name"]}-osdisk-${count.index}"
-    managed_disk_type = "Standard_LRS"
+    name              = "${var.proxy["name"]}-osdisk-${count.index + 1}"
+    managed_disk_type = "${var.proxy["os_disk_type"]}"
     caching           = "ReadWrite"
     create_option     = "FromImage"
   }
 
+  # storage_data_disk {
+  #   name              = "${var.proxy["name"]}-dockerdisk-${count.index + 1}"
+  #   managed_disk_type = "${var.proxy["docker_disk_type"]}"
+  #   disk_size_gb      = "${var.proxy["docker_disk_size"]}"
+  #   caching           = "ReadWrite"
+  #   create_option     = "Empty"
+  #   lun               = 1
+  # }
+
   os_profile {
-    computer_name  = "${var.proxy["name"]}-${count.index}"
+    computer_name  = "${var.proxy["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    custom_data    = <<EOF
-#cloud-config
-users:
-  - default
-  - name: icpdeploy
-    groups: [ wheel ]
-    sudo: [ "ALL=(ALL) NOPASSWD:ALL" ]
-    shell: /bin/bash
-    ssh-authorized-keys:
-      - ${tls_private_key.installkey.public_key_openssh}
-EOF
+    custom_data    = "${data.template_cloudinit_config.config.rendered}"
   }
 
   os_profile_linux_config {
@@ -106,11 +187,18 @@ EOF
 ##################################
 resource "azurerm_virtual_machine" "management" {
   count                 = "${var.management["nodes"]}"
-  name                  = "${var.management["name"]}-${count.index}"
+  name                  = "${var.management["name"]}${count.index + 1}"
   location              = "${var.location}"
   resource_group_name   = "${azurerm_resource_group.icp.name}"
   vm_size               = "${var.management["vm_size"]}"
   network_interface_ids = ["${element(azurerm_network_interface.management_nic.*.id, count.index)}"]
+
+  # The SystemAssigned identity enables the Azure Cloud Provider to use ManagedIdentityExtension
+  identity = {
+    type = "SystemAssigned"
+  }
+
+  availability_set_id = "${azurerm_availability_set.controlplane.id}"
 
   storage_image_reference {
     publisher = "${lookup(var.os_image_map, join("_publisher", list(var.os_image, "")))}"
@@ -120,26 +208,25 @@ resource "azurerm_virtual_machine" "management" {
   }
 
   storage_os_disk {
-    name              = "${var.management["name"]}-osdisk-${count.index}"
-    managed_disk_type = "Standard_LRS"
+    name              = "${var.management["name"]}-osdisk-${count.index + 1}"
+    managed_disk_type = "${var.management["os_disk_type"]}"
     caching           = "ReadWrite"
     create_option     = "FromImage"
   }
 
+  # storage_data_disk {
+  #   name              = "${var.management["name"]}-dockerdisk-${count.index + 1}"
+  #   managed_disk_type = "${var.management["docker_disk_type"]}"
+  #   disk_size_gb      = "${var.management["docker_disk_size"]}"
+  #   caching           = "ReadWrite"
+  #   create_option     = "Empty"
+  #   lun               = 1
+  # }
+
   os_profile {
-    computer_name  = "${var.management["name"]}-${count.index}"
+    computer_name  = "${var.management["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    custom_data    = <<EOF
-#cloud-config
-users:
-  - default
-  - name: icpdeploy
-    groups: [ wheel ]
-    sudo: [ "ALL=(ALL) NOPASSWD:ALL" ]
-    shell: /bin/bash
-    ssh-authorized-keys:
-      - ${tls_private_key.installkey.public_key_openssh}
-EOF
+    custom_data    = "${data.template_cloudinit_config.config.rendered}"
   }
 
   os_profile_linux_config {
@@ -157,11 +244,18 @@ EOF
 ##################################
 resource "azurerm_virtual_machine" "worker" {
   count                 = "${var.worker["nodes"]}"
-  name                  = "${var.worker["name"]}-${count.index}"
+  name                  = "${var.worker["name"]}${count.index + 1}"
   location              = "${var.location}"
   resource_group_name   = "${azurerm_resource_group.icp.name}"
   vm_size               = "${var.worker["vm_size"]}"
   network_interface_ids = ["${element(azurerm_network_interface.worker_nic.*.id, count.index)}"]
+
+  # The SystemAssigned identity enables the Azure Cloud Provider to use ManagedIdentityExtension
+  identity = {
+    type = "SystemAssigned"
+  }
+
+  availability_set_id = "${azurerm_availability_set.workers.id}"
 
   storage_image_reference {
     publisher = "${lookup(var.os_image_map, join("_publisher", list(var.os_image, "")))}"
@@ -171,27 +265,25 @@ resource "azurerm_virtual_machine" "worker" {
   }
 
   storage_os_disk {
-    name              = "${var.worker["name"]}-osdisk-${count.index}"
-    managed_disk_type = "Standard_LRS"
+    name              = "${var.worker["name"]}-osdisk-${count.index + 1}"
+    managed_disk_type = "${var.worker["os_disk_type"]}"
     caching           = "ReadWrite"
     create_option     = "FromImage"
   }
 
+  # storage_data_disk {
+  #   name              = "${var.worker["name"]}-dockerdisk-${count.index + 1}"
+  #   managed_disk_type = "${var.worker["docker_disk_type"]}"
+  #   disk_size_gb      = "${var.worker["docker_disk_size"]}"
+  #   caching           = "ReadWrite"
+  #   create_option     = "Empty"
+  #   lun               = 1
+  # }
 
   os_profile {
-    computer_name  = "${var.worker["name"]}-${count.index}"
+    computer_name  = "${var.worker["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    custom_data    = <<EOF
-#cloud-config
-users:
-  - default
-  - name: icpdeploy
-    groups: [ wheel ]
-    sudo: [ "ALL=(ALL) NOPASSWD:ALL" ]
-    shell: /bin/bash
-    ssh-authorized-keys:
-      - ${tls_private_key.installkey.public_key_openssh}
-EOF
+    custom_data    = "${data.template_cloudinit_config.config.rendered}"
   }
 
   os_profile_linux_config {

@@ -28,8 +28,13 @@ variable "resource_group" {
 }
 
 variable "virtual_network_name" {
-  description = "The name for the virtual network."
-  default     = "vnet"
+  description = "The name for the Azure virtual network."
+  default     = "icp_vnet"
+}
+
+variable "virtual_network_cidr" {
+  description = "cidr for the Azure virtual network"
+  default     = "10.0.0.0/16"
 }
 variable "route_table_name" {
   description = "The name for the route table."
@@ -40,8 +45,8 @@ variable "subnet_name" {
   default     = "icp_subnet"
 }
 variable "subnet_prefix" {
-  description = "The address prefix to use for the subnet."
-  default     = "172.16.1.0/24"
+  description = "The address prefix to use for the VM subnet."
+  default     = "10.0.0.0/24"
 }
 variable "storage_account_tier" {
   description = "Defines the Tier of storage account to be created. Valid options are Standard and Premium."
@@ -85,21 +90,16 @@ variable "admin_username" {
   description = "linux vm administrator user name"
   default     = "vmadmin"
 }
-/*
-variable "admin_password" {
-  description = "administrator password (recommended to disable password auth)"
-  default = ""
-}
-*/
+
 
 ##### ICP Configurations ######
 variable "network_cidr" {
-  description = "ICP Network CIDR"
-  default     = "10.1.0.0/16"
+  description = "ICP Network CIDR for PODs"
+  default     = "10.0.128.0/17"
 }
 variable "cluster_ip_range" {
   description = "ICP Service Cluster IP Range"
-  default     = "10.0.0.1/24"
+  default     = "10.1.0.0/24"
 }
 variable "icpadmin_password" {
     description = "ICP admin password"
@@ -113,35 +113,60 @@ variable "cluster_name" {
   description = "Deployment name for resources prefix"
   default     = "myicp"
 }
+
+# TODO: Create option to have etcd on separate VM
+# TODO: Find SSD option
+
 variable "master" {
   type = "map"
   default = {
-    nodes       = "1"
-    name        = "master"
-    vm_size     = "Standard_A4_v2"
+    nodes         = "1"
+    name          = "master"
+    vm_size       = "Standard_A8_v2"
+    os_disk_type  = "Standard_LRS"
+    docker_disk_size = "100"
+    docker_disk_type = "Standard_LRS"
   }
 }
 variable "proxy" {
   type = "map"
   default = {
-    nodes       = "1"
-    name        = "proxy"
-    vm_size     = "Standard_A2_v2"
+    nodes         = "1"
+    name          = "proxy"
+    vm_size       = "Standard_A2_v2"
+    os_disk_type  = "Standard_LRS"
+    docker_disk_size = "100"
+    docker_disk_type = "Standard_LRS"
   }
 }
 variable "management" {
   type = "map"
   default = {
-    nodes       = "1"
-    name        = "mgmt"
-    vm_size     = "Standard_A4_v2"
+    nodes         = "1"
+    name          = "mgmt"
+    #vm_size      = "Standard_A4_v2"
+    vm_size       = "Standard_A8_v2"
+    os_disk_type  = "Standard_LRS"
+    docker_disk_size = "100"
+    docker_disk_type = "Standard_LRS"
   }
 }
 variable "worker" {
   type = "map"
   default = {
-    nodes       = "3"
-    name        = "worker"
-    vm_size     = "Standard_A4_v2"
+    nodes         = "2"
+    name          = "worker"
+    vm_size       = "Standard_A4_v2"
+    os_disk_type  = "Standard_LRS"
+    docker_disk_size = "100"
+    docker_disk_type = "Standard_LRS"
   }
+}
+
+## IAM options for kubelet and controller manager
+variable "aadClientId" {
+  default = ""
+}
+variable "aadClientSecret" {
+  default = ""
 }

@@ -7,6 +7,13 @@ IBM Cloud Private Community Edition is installed directly from Docker Hub, so th
 
 This template is suitable for initial tests, and validations.
 
+## What the template does
+
+Creates
+
+Note: This template uses the included temporary disk for the VM as the backing disk for Docker. This performant SSD disk, but certain azure maintenance events may delete the content of this disk, affecting the stability of your cluster.
+## Resources created
+
 
 ## Using the Terraform templates
 
@@ -44,7 +51,8 @@ This template is suitable for initial tests, and validations.
 
 
 
-Here is an example terraform.tfvars file:
+
+Here are some example terraform.tfvars files:
 
 Simple terraform.tfvars to allow connectivity with existing ssh keypair.
 ```

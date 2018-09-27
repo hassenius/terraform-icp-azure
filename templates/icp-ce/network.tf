@@ -2,7 +2,8 @@
 resource "azurerm_virtual_network" "icp_vnet" {
   name                = "${var.virtual_network_name}"
   location            = "${var.location}"
-  address_space       = ["${var.subnet_prefix}"]
+  #address_space       = ["${var.subnet_prefix}", "${var.cluster_ip_range}", "${var.network_cidr}"]
+  address_space       = ["${var.virtual_network_cidr}"]
   resource_group_name = "${azurerm_resource_group.icp.name}"
 }
 #Route Table
@@ -17,6 +18,14 @@ resource "azurerm_subnet" "subnet" {
   virtual_network_name = "${azurerm_virtual_network.icp_vnet.name}"
   resource_group_name  = "${azurerm_resource_group.icp.name}"
   address_prefix       = "${var.subnet_prefix}"
+  route_table_id       = "${azurerm_route_table.routetb.id}"
+}
+
+resource "azurerm_subnet" "container_subnet" {
+  name                 = "icp-container-network"
+  virtual_network_name = "${azurerm_virtual_network.icp_vnet.name}"
+  resource_group_name  = "${azurerm_resource_group.icp.name}"
+  address_prefix       = "${var.network_cidr}"
   route_table_id       = "${azurerm_route_table.routetb.id}"
 }
 
@@ -45,6 +54,7 @@ resource "azurerm_network_interface" "master_nic" {
   location            = "${var.location}"
   resource_group_name = "${azurerm_resource_group.icp.name}"
   network_security_group_id = "${azurerm_network_security_group.master_sg.id}"
+  enable_ip_forwarding      = "true"
 
   ip_configuration {
     name                          = "${var.master["name"]}-ipcfg-${count.index}"
@@ -59,6 +69,7 @@ resource "azurerm_network_interface" "proxy_nic" {
   location            = "${var.location}"
   resource_group_name = "${azurerm_resource_group.icp.name}"
   network_security_group_id = "${azurerm_network_security_group.proxy_sg.id}"
+  enable_ip_forwarding      = "true"
 
   ip_configuration {
     name                          = "${var.proxy["name"]}-ipcfg-${count.index}"
@@ -73,6 +84,7 @@ resource "azurerm_network_interface" "management_nic" {
   location            = "${var.location}"
   resource_group_name = "${azurerm_resource_group.icp.name}"
   network_security_group_id = "${azurerm_network_security_group.worker_sg.id}"
+  enable_ip_forwarding      = "true"
 
   ip_configuration {
     name                          = "${var.management["name"]}-ipcfg-${count.index}"
@@ -86,6 +98,7 @@ resource "azurerm_network_interface" "worker_nic" {
   location            = "${var.location}"
   resource_group_name = "${azurerm_resource_group.icp.name}"
   network_security_group_id = "${azurerm_network_security_group.worker_sg.id}"
+  enable_ip_forwarding      = "true"
 
   ip_configuration {
     name                          = "${var.worker["name"]}-ipcfg-${count.index}"
