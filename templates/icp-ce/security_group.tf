@@ -53,6 +53,18 @@ resource "azurerm_network_security_group" "master_sg" {
     destination_address_prefix = "*"
   }
   security_rule {
+    name                       = "${var.cluster_name}-${var.master["name"]}-im"
+    description                = "Allow inbound image manager from all locations"
+    priority                   = 450
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "8600"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  security_rule {
     name                       = "${var.cluster_name}-${var.master["name"]}-monitoring"
     description                = "Allow inbound Monitoring from all locations"
     priority                   = 500
