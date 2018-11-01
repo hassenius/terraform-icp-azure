@@ -103,7 +103,7 @@ variable "cluster_ip_range" {
 }
 variable "icpadmin_password" {
     description = "ICP admin password"
-    default = "admin"
+    default = ""
 }
 variable "icp_version" {
     description = "ICP Version"
@@ -169,4 +169,12 @@ variable "aadClientId" {
 }
 variable "aadClientSecret" {
   default = ""
+}
+
+# The following services can be disabled for 3.1
+# custom-metrics-adapter, image-security-enforcement, istio, metering, monitoring, service-catalog, storage-minio, storage-glusterfs, and vulnerability-advisor
+variable "disabled_management_services" {
+  description = "List of management services to disable"
+  type        = "list"
+  default     = ["istio", "vulnerability-advisor", "storage-glusterfs", "storage-minio", "metrics-server", "custom-metrics-adapter", "image-security-enforcement", "metering", "monitoring", "logging", "audit-logging"]
 }

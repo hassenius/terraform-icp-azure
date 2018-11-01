@@ -44,7 +44,11 @@ module "icpprovision" {
     "cluster_access_ip"         = "${element(azurerm_public_ip.master_pip.*.ip_address, 0)}"
     "proxy_access_ip"           = "${element(azurerm_public_ip.proxy_pip.*.ip_address, 0)}"
 
-    #
+    # An admin password will be generated if not supplied in terraform.tfvars
+    "default_admin_password"          = "${local.icppassword}"
+
+    # This is the list of disabled management services
+    "management_services"             = "${local.disabled_management_services}"
 
     "calico_ip_autodetection_method" = "can-reach=${azurerm_network_interface.master_nic.0.private_ip_address}"
     "kubelet_nodename"          = "nodename"
