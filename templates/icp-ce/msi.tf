@@ -71,14 +71,12 @@ data "azurerm_client_config" "test" {}
 # },
 
 
-resource "azurerm_role_assignment" "workers" {
-  count = "${var.worker["nodes"]}"
-  #name               = "00000000-0000-0000-0000-000000000000"
-  scope              = "${azurerm_resource_group.icp.id}"
-  #scope               = "${element(azurerm_virtual_machine.worker.*.id, count.index)}"
-  #scope              = "/subscriptions/e2ff6a34-1e5d-46fe-8fac-74cbcd45d42b/resourceGroups/providers/Microsoft.Compute/virtualMachines"
-
-  #role_definition_id = "${azurerm_role_definition.worker.id}"
-  role_definition_id  = "${data.azurerm_builtin_role_definition.builtin_role_definition.id}"
-  principal_id       = "${element(azurerm_virtual_machine.worker.*.identity.0.principal_id, count.index)}"
-}
+# resource "azurerm_role_assignment" "workers" {
+#   count = "${var.worker["nodes"]}"
+#   #name               = "00000000-0000-0000-0000-000000000000"
+#   scope              = "${azurerm_resource_group.icp.id}"
+#
+#   #role_definition_id = "${azurerm_role_definition.worker.id}"
+#   role_definition_id  = "${data.azurerm_builtin_role_definition.builtin_role_definition.id}"
+#   principal_id       = "${element(azurerm_virtual_machine.worker.*.identity.0.principal_id, count.index)}"
+# }
