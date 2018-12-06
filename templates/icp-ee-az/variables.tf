@@ -6,6 +6,10 @@ variable "location" {
   default     = "West Europe"
 }
 
+variable "zones" {
+  description = "How many zones to deploy to within the region. If this is less than 3 availability will be limited"
+  default     = "3"
+}
 
 variable "instance_name" {
   description = "Name of the deployment. Will be added to virtual machine names"
@@ -103,11 +107,11 @@ variable "cluster_ip_range" {
 }
 variable "icpadmin_password" {
     description = "ICP admin password"
-    default = ""
+    default = "admin"
 }
-variable "icp_version" {
-    description = "ICP Version"
-    default = "3.1.1"
+variable "icp_inception_image" {
+    description = "ICP Inception image to use"
+    default = "ibmcom/icp-inception-amd64:3.1.1-ee"
 }
 variable "cluster_name" {
   description = "Deployment name for resources prefix"
@@ -117,21 +121,38 @@ variable "cluster_name" {
 # TODO: Create option to have etcd on separate VM
 # TODO: Find SSD option
 
-variable "master" {
+variable "boot" {
   type = "map"
   default = {
     nodes         = "1"
+    name          = "bootnode"
+    vm_size       = "Standard_A2_v2"
+    os_disk_type  = "Standard_LRS"
+    os_disk_size  = "100"
+    docker_disk_size = "100"
+    docker_disk_type = "StandardSSD_LRS"
+  }
+}
+variable "master" {
+  type = "map"
+  default = {
+    nodes         = "3"
     name          = "master"
     vm_size       = "Standard_A8_v2"
     os_disk_type  = "Standard_LRS"
+    os_disk_size  = "100"
     docker_disk_size = "100"
-    docker_disk_type = "Standard_LRS"
+    docker_disk_type = "StandardSSD_LRS"
+    etcd_data_size   = "10"
+    etcd_data_type   = "StandardSSD_LRS"
+    etcd_wal_size    = "10"
+    etcd_wal_type    = "StandardSSD_LRS"
   }
 }
 variable "proxy" {
   type = "map"
   default = {
-    nodes         = "1"
+    nodes         = "0"
     name          = "proxy"
     vm_size       = "Standard_A2_v2"
     os_disk_type  = "Standard_LRS"
@@ -142,7 +163,7 @@ variable "proxy" {
 variable "management" {
   type = "map"
   default = {
-    nodes         = "1"
+    nodes         = "3"
     name          = "mgmt"
     #vm_size      = "Standard_A4_v2"
     vm_size       = "Standard_A8_v2"
@@ -154,13 +175,25 @@ variable "management" {
 variable "worker" {
   type = "map"
   default = {
-    nodes         = "2"
+    nodes         = "6"
     name          = "worker"
     vm_size       = "Standard_A4_v2"
     os_disk_type  = "Standard_LRS"
     docker_disk_size = "100"
     docker_disk_type = "Standard_LRS"
   }
+}
+
+variable "master_lb_ports" {
+  description = "Ports on the master load balancer to listen to"
+  type        = "list"
+  default     = ["8443", "8001", "8500", "8600", "4300", "9443"]
+}
+
+variable "proxy_lb_ports" {
+  description = "Ports on the master load balancer to listen to"
+  type        = "list"
+  default     = ["80", "443"]
 }
 
 ## IAM options for kubelet and controller manager
@@ -171,10 +204,35 @@ variable "aadClientSecret" {
   description = "aadClientSecret to be provided to kubernetes controller manager"
 }
 
+variable "private_registry" {
+  description = "Private docker registry where the ICP installation image is located"
+  default     = ""
+}
+
+variable "registry_username" {
+  description = "Username for the private docker restistry the ICP image will be grabbed from"
+  default     = ""
+}
+
+variable "registry_password" {
+  description = "Password for the private docker restistry the ICP image will be grabbed from"
+  default     = ""
+}
+
+variable "image_location" {
+  description = "Location of ICP image tarball. Assumes stored as azure blob"
+  default     = ""
+}
+
+variable "image_location_key" {
+  description = "Access key to download the ICP image tarball"
+  default     = ""
+}
+
 # The following services can be disabled for 3.1
 # custom-metrics-adapter, image-security-enforcement, istio, metering, monitoring, service-catalog, storage-minio, storage-glusterfs, and vulnerability-advisor
 variable "disabled_management_services" {
   description = "List of management services to disable"
   type        = "list"
-  default     = ["istio", "vulnerability-advisor", "storage-glusterfs", "storage-minio", "metrics-server", "custom-metrics-adapter", "image-security-enforcement", "metering", "monitoring", "logging", "audit-logging"]
+  default     = ["istio", "vulnerability-advisor", "storage-glusterfs", "storage-minio"]
 }

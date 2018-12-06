@@ -1,62 +1,96 @@
 
-data "template_cloudinit_config" "config" {
-  gzip          = true
-  base64_encode = true
-
-  # Create the icpdeploy user which we will use during initial deployment of ICP.
-  part {
-    content_type = "text/cloud-config"
-    content      =  <<EOF
-#cloud-config
-package_upgrade: true
-packages:
-  - cifs-utils
-  - nfs-common
-  - python-yaml
-users:
-  - default
-  - name: icpdeploy
-    groups: [ wheel ]
-    sudo: [ "ALL=(ALL) NOPASSWD:ALL" ]
-    shell: /bin/bash
-    ssh-authorized-keys:
-      - ${tls_private_key.installkey.public_key_openssh}
-EOF
-  }
-
-  # Setup the docker disk
-  part {
-    content_type = "text/x-shellscript"
-    content      = <<EOF
-#!/bin/bash
-sudo mkdir -p /var/lib/docker
-# sudo parted -s -a optimal /dev/sdc mklabel gpt -- mkpart primary xfs 1 -1
-
-# sudo partprobe
-umount /mnt
-mount /dev/sdb1 /var/lib/docker
-sudo sed -i 's|/mnt|/var/lib/docker|' /etc/fstab
-#sudo mkfs.xfs -n ftype=1 /dev/sdc1
-#echo "/dev/sdc1  /var/lib/docker   xfs  defaults   0 0" | sudo tee -a /etc/fstab
-#sudo mount -a
-EOF
-  }
-}
-
-
-
 ##################################
 ## Create Availability Sets
 ##################################
 
-resource "azurerm_availability_set" "workers" {
-  name                = "workers_availabilityset"
-  location            = "${azurerm_resource_group.icp.location}"
-  resource_group_name = "${azurerm_resource_group.icp.name}"
-  managed             = true
+## When Terraform 0.12 comes out we should be able to set the tags also
+# resource "azurerm_availability_set" "controlplane" {
+#   name                = "controlpane_availabilityset"
+#   location            = "${azurerm_resource_group.icp.location}"
+#   resource_group_name = "${azurerm_resource_group.icp.name}"
+#   managed             = true
+#
+#   tags {
+#     environment = "Production"
+#   }
+# }
+#
+# resource "azurerm_availability_set" "proxy" {
+#   name                = "proxy_availabilityset"
+#   location            = "${azurerm_resource_group.icp.location}"
+#   resource_group_name = "${azurerm_resource_group.icp.name}"
+#   managed             = true
+#
+#   tags {
+#     environment = "Production"
+#   }
+# }
+#
+#
+# resource "azurerm_availability_set" "workers" {
+#   name                = "workers_availabilityset"
+#   location            = "${azurerm_resource_group.icp.location}"
+#   resource_group_name = "${azurerm_resource_group.icp.name}"
+#   managed             = true
+#
+#   tags {
+#     environment = "Production"
+#   }
+# }
 
-  tags {
-    environment = "Production"
+##################################
+## Create Boot VM
+##################################
+resource "azurerm_virtual_machine" "boot" {
+  count                 = "${var.boot["nodes"]}"
+  name                  = "${var.boot["name"]}${count.index + 1}"
+  location              = "${var.location}"
+  resource_group_name   = "${azurerm_resource_group.icp.name}"
+  vm_size               = "${var.boot["vm_size"]}"
+  network_interface_ids = ["${element(azurerm_network_interface.boot_nic.*.id, count.index)}"]
+
+  # The SystemAssigned identity enables the Azure Cloud Provider to use ManagedIdentityExtension
+  identity = {
+    type = "SystemAssigned"
+  }
+
+
+  storage_image_reference {
+    publisher = "${lookup(var.os_image_map, join("_publisher", list(var.os_image, "")))}"
+    offer     = "${lookup(var.os_image_map, join("_offer", list(var.os_image, "")))}"
+    sku       = "${lookup(var.os_image_map, join("_sku", list(var.os_image, "")))}"
+    version   = "${lookup(var.os_image_map, join("_version", list(var.os_image, "")))}"
+  }
+
+  storage_os_disk {
+    name              = "${var.boot["name"]}-osdisk-${count.index + 1}"
+    managed_disk_type = "${var.boot["os_disk_type"]}"
+    disk_size_gb      = "${var.boot["os_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+  }
+
+  storage_data_disk {
+    name              = "${var.proxy["name"]}-dockerdisk-${count.index + 1}"
+    managed_disk_type = "${var.proxy["docker_disk_type"]}"
+    disk_size_gb      = "${var.proxy["docker_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 1
+  }
+
+  os_profile {
+    computer_name  = "${var.boot["name"]}${count.index + 1}"
+    admin_username = "${var.admin_username}"
+    custom_data    = "${data.template_cloudinit_config.bootconfig.rendered}"
+  }
+
+  os_profile_linux_config {
+    disable_password_authentication = "${var.disable_password_authentication}"
+    ssh_keys {
+      key_data = "${var.ssh_public_key}"
+      path = "/home/${var.admin_username}/.ssh/authorized_keys"
+    }
   }
 }
 
@@ -77,6 +111,9 @@ resource "azurerm_virtual_machine" "master" {
     type = "SystemAssigned"
   }
 
+  # availability_set_id = "${azurerm_availability_set.controlplane.id}"
+  zones               = ["${count.index % var.zones + 1}"]
+
   storage_image_reference {
     publisher = "${lookup(var.os_image_map, join("_publisher", list(var.os_image, "")))}"
     offer     = "${lookup(var.os_image_map, join("_offer", list(var.os_image, "")))}"
@@ -87,14 +124,45 @@ resource "azurerm_virtual_machine" "master" {
   storage_os_disk {
     name              = "${var.master["name"]}-osdisk-${count.index + 1}"
     managed_disk_type = "${var.master["os_disk_type"]}"
+    disk_size_gb      = "${var.master["docker_disk_size"]}"
     caching           = "ReadWrite"
     create_option     = "FromImage"
+  }
+
+  # Docker disk
+  storage_data_disk {
+    name              = "${var.master["name"]}-dockerdisk-${count.index + 1}"
+    managed_disk_type = "${var.master["docker_disk_type"]}"
+    disk_size_gb      = "${var.master["docker_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 1
+  }
+
+  # ETCD Data disk
+  storage_data_disk {
+    name              = "${var.master["name"]}-etcddata-${count.index + 1}"
+    managed_disk_type = "${var.master["etcd_data_type"]}"
+    disk_size_gb      = "${var.master["etcd_data_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 2
+  }
+
+  # ETCD WAL disk
+  storage_data_disk {
+    name              = "${var.master["name"]}-etcdwal-${count.index + 1}"
+    managed_disk_type = "${var.master["etcd_wal_type"]}"
+    disk_size_gb      = "${var.master["etcd_wal_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 3
   }
 
   os_profile {
     computer_name  = "${var.master["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    custom_data    = "${data.template_cloudinit_config.config.rendered}"
+    custom_data    = "${data.template_cloudinit_config.masterconfig.rendered}"
   }
 
   os_profile_linux_config {
@@ -123,6 +191,9 @@ resource "azurerm_virtual_machine" "proxy" {
     type = "SystemAssigned"
   }
 
+  # availability_set_id = "${azurerm_availability_set.proxy.id}"
+  zones               = ["${count.index % var.zones + 1}"]
+
   storage_image_reference {
     publisher = "${lookup(var.os_image_map, join("_publisher", list(var.os_image, "")))}"
     offer     = "${lookup(var.os_image_map, join("_offer", list(var.os_image, "")))}"
@@ -137,10 +208,19 @@ resource "azurerm_virtual_machine" "proxy" {
     create_option     = "FromImage"
   }
 
+  # storage_data_disk {
+  #   name              = "${var.proxy["name"]}-dockerdisk-${count.index + 1}"
+  #   managed_disk_type = "${var.proxy["docker_disk_type"]}"
+  #   disk_size_gb      = "${var.proxy["docker_disk_size"]}"
+  #   caching           = "ReadWrite"
+  #   create_option     = "Empty"
+  #   lun               = 1
+  # }
+
   os_profile {
     computer_name  = "${var.proxy["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    custom_data    = "${data.template_cloudinit_config.config.rendered}"
+    custom_data    = "${data.template_cloudinit_config.workerconfig.rendered}"
   }
 
   os_profile_linux_config {
@@ -168,6 +248,9 @@ resource "azurerm_virtual_machine" "management" {
     type = "SystemAssigned"
   }
 
+  # availability_set_id = "${azurerm_availability_set.workers.id}"
+  zones               = ["${count.index % var.zones + 1}"]
+
   storage_image_reference {
     publisher = "${lookup(var.os_image_map, join("_publisher", list(var.os_image, "")))}"
     offer     = "${lookup(var.os_image_map, join("_offer", list(var.os_image, "")))}"
@@ -182,10 +265,19 @@ resource "azurerm_virtual_machine" "management" {
     create_option     = "FromImage"
   }
 
+  # storage_data_disk {
+  #   name              = "${var.management["name"]}-dockerdisk-${count.index + 1}"
+  #   managed_disk_type = "${var.management["docker_disk_type"]}"
+  #   disk_size_gb      = "${var.management["docker_disk_size"]}"
+  #   caching           = "ReadWrite"
+  #   create_option     = "Empty"
+  #   lun               = 1
+  # }
+
   os_profile {
     computer_name  = "${var.management["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    custom_data    = "${data.template_cloudinit_config.config.rendered}"
+    custom_data    = "${data.template_cloudinit_config.workerconfig.rendered}"
   }
 
   os_profile_linux_config {
@@ -214,7 +306,8 @@ resource "azurerm_virtual_machine" "worker" {
     type = "SystemAssigned"
   }
 
-  availability_set_id = "${azurerm_availability_set.workers.id}"
+  # availability_set_id = "${azurerm_availability_set.workers.id}"
+  zones               = ["${count.index % var.zones + 1}"]
 
   storage_image_reference {
     publisher = "${lookup(var.os_image_map, join("_publisher", list(var.os_image, "")))}"
@@ -230,10 +323,19 @@ resource "azurerm_virtual_machine" "worker" {
     create_option     = "FromImage"
   }
 
+  # storage_data_disk {
+  #   name              = "${var.worker["name"]}-dockerdisk-${count.index + 1}"
+  #   managed_disk_type = "${var.worker["docker_disk_type"]}"
+  #   disk_size_gb      = "${var.worker["docker_disk_size"]}"
+  #   caching           = "ReadWrite"
+  #   create_option     = "Empty"
+  #   lun               = 1
+  # }
+
   os_profile {
     computer_name  = "${var.worker["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    custom_data    = "${data.template_cloudinit_config.config.rendered}"
+    custom_data    = "${data.template_cloudinit_config.workerconfig.rendered}"
   }
 
   os_profile_linux_config {

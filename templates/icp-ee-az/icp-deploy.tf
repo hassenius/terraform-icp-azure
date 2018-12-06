@@ -7,13 +7,24 @@
 # which is used by the azure cloud provider
 data "azurerm_client_config" "client_config" {}
 
+locals {
+
+  # Intermediate interpolations
+  credentials = "${var.registry_username != "" ? join(":", list("${var.registry_username}"), list("${var.registry_password}")) : ""}"
+  cred_reg   = "${local.credentials != "" ? join("@", list("${local.credentials}"), list("${var.private_registry}")) : ""}"
+
+  # Inception image formatted for ICP deploy module
+  inception_image = "${local.cred_reg != "" ? join("/", list("${local.cred_reg}"), list("${var.icp_inception_image}")) : var.icp_inception_image}"
+
+}
+
 module "icpprovision" {
   source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.3.7"
 
-  bastion_host = "${azurerm_public_ip.master_pip.0.ip_address}"
+  bastion_host = "${azurerm_public_ip.bootnode_pip.ip_address}"
 
   # Provide IP addresses for boot, master, mgmt, va, proxy and workers
-  boot-node = "${element(azurerm_network_interface.master_nic.*.private_ip_address, 0)}"
+  boot-node = "${element(concat(azurerm_network_interface.boot_nic.*.private_ip_address, list("")), 0)}"
 
   icp-host-groups = {
     master      = ["${azurerm_network_interface.master_nic.*.private_ip_address}"]
@@ -22,23 +33,28 @@ module "icpprovision" {
     management  = ["${azurerm_network_interface.management_nic.*.private_ip_address}"]
   }
 
-  icp-version = "${var.icp_version}"
+  icp-version = "${local.inception_image}"
 
   # Workaround for terraform issue #10857
   # When this is fixed, we can work this out autmatically
 
-  cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"] + var.management["nodes"]}"
+  cluster_size  = "${var.boot["nodes"] + var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"] + var.management["nodes"]}"
 
   icp_configuration = {
     "network_cidr"              = "${var.network_cidr}"
     "service_cluster_ip_range"  = "${var.cluster_ip_range}"
     "ansible_user"              = "icpdeploy"
     "ansible_become"            = "true"
-    "default_admin_password"    = "${var.icpadmin_password}"
-    "cluster_lb_address"         = "${element(azurerm_public_ip.master_pip.*.fqdn, 0)}"
-    "proxy_lb_address"           = "${element(azurerm_public_ip.proxy_pip.*.fqdn, 0)}"
+    "cluster_lb_address"        = "${azurerm_public_ip.master_pip.fqdn}"
+    "proxy_lb_address"          = "${azurerm_public_ip.master_pip.fqdn}"
     "cluster_CA_domain"         = "${azurerm_public_ip.master_pip.fqdn}"
     "cluster_name"              = "${var.cluster_name}"
+
+    "private_registry_enabled"  = "${var.private_registry != "" ? "true" : "false"}"
+    # "private_registry_server"   = "${var.private_registry}"
+    "image_repo"                = "${var.private_registry != "" ? "${var.private_registry}/${dirname(var.icp_inception_image)}" : ""}"
+    "docker_username"           = "${var.registry_username}"
+    "docker_password"           = "${var.registry_password}"
 
     # An admin password will be generated if not supplied in terraform.tfvars
     "default_admin_password"          = "${local.icppassword}"
@@ -57,12 +73,13 @@ module "icpprovision" {
     # Azure specific configurations
     # We don't need ip in ip with Azure networking
     "calico_ipip_enabled"       = "false"
+    # Settings for patched icp-inception
     "calico_networking_backend"  = "none"
     "calico_ipam_type"           = "host-local"
     "calico_ipam_subnet"         = "usePodCidr"
-
+    # Try this later: "calico_cluster_type" = "k8s"
     "azure"                  = {
-      # Common authantication details for both kubelet and controller manager
+
       "cloud_provider_conf" = {
           "cloud"               = "AzurePublicCloud"
           "useInstanceMetadata" = "true"
@@ -71,9 +88,7 @@ module "icpprovision" {
           "resourceGroup"       = "${azurerm_resource_group.icp.name}"
           "useManagedIdentityExtension" = "true"
       }
-      # Authentication information specific for controller
-      ## Controller will need additional permissions as it needs to create routes in the router table,
-      ## interact with storage and networking resources
+
       "cloud_provider_controller_conf" = {
           "cloud"               = "AzurePublicCloud"
           "useInstanceMetadata" = "true"
@@ -89,16 +104,15 @@ module "icpprovision" {
           "routeTableName"      = "${azurerm_route_table.routetb.name}"
           "cloudProviderBackoff"        = "false"
           "loadBalancerSku"             = "Standard"
-          "primaryAvailabilitySetName"  = "${basename(element(azurerm_virtual_machine.worker.*.availability_set_id, 0))}"# "workers_availabilityset"
+          # "primaryAvailabilitySetName"  = "${basename(element(azurerm_virtual_machine.worker.*.availability_set_id, 0))}"# "workers_availabilityset"
           "securityGroupName"           = "${azurerm_network_security_group.worker_sg.name}"# "hktest-worker-sg"
           "excludeMasterFromStandardLB" = "true"
           "useManagedIdentityExtension" = "false"
       }
     }
 
-    # We'll insert a dummy value here to create an implicit dependency on VMs in Terraform
-    "dummy_waitfor" = "${length(concat(azurerm_virtual_machine.master.*.id, azurerm_virtual_machine.worker.*.id, azurerm_virtual_machine.management.*.id))}"
-
+    # # We'll insert a dummy value here to create an implicit dependency on VMs in Terraform
+    "dummy_waitfor" = "${length(concat(azurerm_virtual_machine.boot.*.id, azurerm_virtual_machine.master.*.id, azurerm_virtual_machine.worker.*.id, azurerm_virtual_machine.management.*.id))}"
   }
 
   generate_key = true
