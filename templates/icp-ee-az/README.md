@@ -1,17 +1,13 @@
 
-# Deploying IBM Cloud Private Community Edition on Azure using Terraform
+# Deploying IBM Cloud Private Enterprise Edition on Azure using Terraform
 
 This template provides a basic deployment of a single master, single proxy, single management node and three worker nodes azure VMs. Both Maser and Proxy are assigned public IP addresses so they can be easily accessed over the internet.
 
-IBM Cloud Private Community Edition is installed directly from Docker Hub, so this template does not require access to ICP Enterprise Edition licenses and Image tarball.
 
-This template is suitable for initial tests, and validations.
+Limitations
+- Since Azure Cloud Provider for Kubernetes 1.11 is not Zone aware, so you should not use Dynamic Volume Provisioning with a multi-zone setup.
 
-
-Note: This template uses the included temporary disk for the VM as the backing disk for Docker. This performant SSD disk, but certain azure maintenance events may delete the content of this disk, affecting the stability of your cluster.
-
-
-## Using the Terraform template
+## Using the Terraform templates
 
 1. git clone the repository
 
@@ -39,7 +35,7 @@ Note: This template uses the included temporary disk for the VM as the backing d
 |cluster_name        |myicp          |No      |Deployment name for resources prefix    |
 |ssh_public_key      |               |No      |SSH Public Key to add to authorized_key for admin_username. Required if you disable password authentication |
 |disable_password_authentication|true           |No      |Whether to enable or disable ssh password authentication for the created Azure VMs. Default: true|
-|icp_version         |3.1.0          |No      |ICP Version                             |
+|icp_version         |3.1.0         |No      |ICP Version                             |
 |cluster_ip_range    |10.0.0.1/24    |No      |ICP Service Cluster IP Range            |
 |network_cidr        |10.1.0.0/16    |No      |ICP Network CIDR                        |
 |instance_name       |icp            |No      |Name of the deployment. Will be added to virtual machine names|
@@ -47,8 +43,14 @@ Note: This template uses the included temporary disk for the VM as the backing d
 
 
 
+### Notes on Azure Cloud Provider for Kubernetes
 
-Here are some example terraform.tfvars files:
+#### Availability Zones
+Kubernetes adds support for Azure Availability Zones in version 1.12, as an alpha feature.
+Read more about it [here](https://github.com/kubernetes/cloud-provider-azure/blob/master/docs/using-availability-zones.md)
+ICP 3.1.1 includes Kubernetes 1.11 in which the Azure Cloud Provider is not Zone aware. This means that features such as Dynamic PV provisioning should not be used with this template.
+
+Here is an example terraform.tfvars file:
 
 Simple terraform.tfvars to allow connectivity with existing ssh keypair.
 ```
@@ -65,4 +67,62 @@ worker = {
 
 #### Using the environment
 
-Follow the instructions outlined [here](../../README.md)
+#### Logging in
+When the Terraform deployment is complete, you will see an output similar to this:
+
+```
+ICP Admin Password = e66bd82cfeb5ad404ff7f62ba0ac83df
+ICP Admin Username = admin
+ICP Boot node = 40.67.221.37
+ICP Console URL = https://icpdemo-feb5ad40.westeurope.cloudapp.azure.com:8443
+ICP Kubernetes API URL = https://icpdemo-feb5ad40.westeurope.cloudapp.azure.com:8001
+```
+
+Open the Console URL in a web browser and log in with the Admin Username and Admin Password provided from the Terraform template output.
+
+
+#### Using the Azure Loadbalancer
+
+A simple test can be to create a deployment with two nginx pods that are exposed via external load balancer. To do this using kubectl follow the instructions on [IBM KnowledgeCenter Kubectl CLI](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.0/manage_cluster/cfc_cli.html) to set up the command line client.
+
+By default this deployment has image security enforcement enabled. You can read about Image security on [IBM KnowledgeCenter Image Security](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.0/manage_images/image_security.html) Ensure the appropriate policies are in place.
+
+To allow pulling nginx from Docker Hub container registry, create a file with this content:
+  ```
+  apiVersion: securityenforcement.admission.cloud.ibm.com/v1beta1
+  kind: ImagePolicy
+  metadata:
+    name: allow-nginx-dockerhub
+  spec:
+   repositories:
+   # nginx from Docker hub Container Registry
+    - name: "docker.io/nginx/*"
+      policy:
+  ```
+
+Then apply this policy in the namespace you're working in
+
+  ```
+  $ kubectl apply -f
+  ```
+
+Now you can deploy two replicas of an nginx pod
+
+  ```
+  kubectl run mynginx --image=nginx --replicas=2 --port=80
+  ```
+
+Finally expose this deployment
+
+  ```
+  kubectl expose deployment mynginx --port=80 --type=LoadBalancer
+  ```
+
+After a few minutes the load balancer will be available and you can see the IP address of the loadbalancer
+
+  ```
+  $ kubectl get services
+  NAME         TYPE           CLUSTER-IP   EXTERNAL-IP      PORT(S)        AGE
+  kubernetes   ClusterIP      10.1.0.1     <none>           443/TCP        12h
+  mynginx      LoadBalancer   10.1.0.220   51.145.183.111   80:30432/TCP   2m
+  ```
