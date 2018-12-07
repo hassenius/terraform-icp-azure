@@ -60,6 +60,62 @@ resource "azurerm_availability_set" "workers" {
   }
 }
 
+##################################
+## Create Boot VM
+##################################
+resource "azurerm_virtual_machine" "boot" {
+  count                 = "${var.boot["nodes"]}"
+  name                  = "${var.boot["name"]}${count.index + 1}"
+  location              = "${var.location}"
+  resource_group_name   = "${azurerm_resource_group.icp.name}"
+  vm_size               = "${var.boot["vm_size"]}"
+  network_interface_ids = ["${element(azurerm_network_interface.boot_nic.*.id, count.index)}"]
+
+  # The SystemAssigned identity enables the Azure Cloud Provider to use ManagedIdentityExtension
+  identity = {
+    type = "SystemAssigned"
+  }
+
+  # Enable using a different OS for the boot node
+  storage_image_reference {
+    publisher = "${lookup(var.os_image_map, join("_publisher", list(var.boot["os_image"], "")))}"
+    offer     = "${lookup(var.os_image_map, join("_offer", list(var.boot["os_image"], "")))}"
+    sku       = "${lookup(var.os_image_map, join("_sku", list(var.boot["os_image"], "")))}"
+    version   = "${lookup(var.os_image_map, join("_version", list(var.boot["os_image"], "")))}"
+  }
+
+  storage_os_disk {
+    name              = "${var.boot["name"]}-osdisk-${count.index + 1}"
+    managed_disk_type = "${var.boot["os_disk_type"]}"
+    disk_size_gb      = "${var.boot["os_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+  }
+
+  storage_data_disk {
+    name              = "${var.proxy["name"]}-dockerdisk-${count.index + 1}"
+    managed_disk_type = "${var.proxy["docker_disk_type"]}"
+    disk_size_gb      = "${var.proxy["docker_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 1
+  }
+
+  os_profile {
+    computer_name  = "${var.boot["name"]}${count.index + 1}"
+    admin_username = "${var.admin_username}"
+    custom_data    = "${data.template_cloudinit_config.config.rendered}"
+  }
+
+  os_profile_linux_config {
+    disable_password_authentication = "${var.disable_password_authentication}"
+    ssh_keys {
+      key_data = "${var.ssh_public_key}"
+      path = "/home/${var.admin_username}/.ssh/authorized_keys"
+    }
+  }
+}
+
 
 ##################################
 ## Create Master VM

@@ -33,6 +33,16 @@ resource "azurerm_subnet" "container_subnet" {
 
 
 #Public IP
+resource "azurerm_public_ip" "bootnode_pip" {
+  count                        = "${var.boot["nodes"]}"
+  name                         = "${var.boot["name"]}-pip-${count.index}"
+  location                     = "${var.location}"
+  resource_group_name          = "${azurerm_resource_group.icp.name}"
+  public_ip_address_allocation = "Static"
+  sku                          = "Standard"
+  domain_name_label            = "bootnode-${random_id.clusterid.hex}"
+}
+
 resource "azurerm_public_ip" "master_pip" {
   count                        = "${var.master["nodes"]}"
   name                         = "${var.master["name"]}-pip-${count.index}"
@@ -54,6 +64,21 @@ resource "azurerm_public_ip" "proxy_pip" {
 }
 
 #Network Interface
+resource "azurerm_network_interface" "boot_nic" {
+  count               = "${var.boot["nodes"]}"
+  name                = "${var.boot["name"]}-nic-${count.index}"
+  location            = "${var.location}"
+  resource_group_name = "${azurerm_resource_group.icp.name}"
+  network_security_group_id = "${azurerm_network_security_group.boot_sg.id}"
+  enable_ip_forwarding      = "true"
+
+  ip_configuration {
+    name                          = "BootIPAddress"
+    subnet_id                     = "${azurerm_subnet.subnet.id}"
+    public_ip_address_id          = "${azurerm_public_ip.bootnode_pip.id}"
+    private_ip_address_allocation = "Dynamic"
+  }
+}
 resource "azurerm_network_interface" "master_nic" {
   count               = "${var.master["nodes"]}"
   name                = "${var.master["name"]}-nic-${count.index}"

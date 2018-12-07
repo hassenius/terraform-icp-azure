@@ -26,6 +26,7 @@ Note: This template uses the included temporary disk for the VM as the backing d
 |storage_replication_type|LRS            |No      |Defines the Replication Type to use for this storage account. Valid options include LRS, GRS etc.|
 |default_tags        |{u'Owner': u'icpuser', u'Environment': u'icp-test'}|No      |Map of default tags to be assign to any resource that supports it|
 | *ICP Virtual machine settings* | | |
+|boot |{'vm_size':'Standard_A4_v2'<br>'nodes':0<br>'name':'boot'}|No | Boot node instance configuration |
 |master |{'vm_size':'Standard_A4_v2'<br>'nodes':1<br>'name':'master'}|No | Master node instance configuration |
 |management|{'vm_size':'Standard_A4_v2'<br>'nodes':1<br>'name':'mgmt'}|No | Management node instance configuration|
 |proxy|{'vm_size':'Standard_A4_v2'<br>'nodes':1<br>'name':'proxy'}|No| Proxy node instance configuration |
@@ -60,6 +61,20 @@ terraform.tfvars enabling SSH password authentication and provisioning 4 worker 
 disable_password_authentication = false
 worker = {
   "nodes" = 4
+}
+```
+#### Red Hat support
+This automation relies heavily on cloud-init for configuring and preparing the cluster after the VMs have been created.
+Azure has created a cloud-init enabled RHEL image, with the SKU `7-RAW-CI`.
+To simplify the process of doing the installation, you are required to use Ubuntu for the boot node, since Docker-CE is available to install from docker repositories.
+This will bootstrap the cluster installation process and the IBM provided docker package for Red Hat will be installed on the RHEL cluster nodes.
+
+To enable this configuration, add the following to your `terraform.tfvars`
+
+```
+os_image = "rhel"
+boot = {
+  nodes = 1
 }
 ```
 
