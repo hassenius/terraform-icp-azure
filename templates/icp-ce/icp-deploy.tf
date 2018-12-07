@@ -10,10 +10,10 @@ data "azurerm_client_config" "client_config" {}
 module "icpprovision" {
   source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.3.7"
 
-  bastion_host = "${azurerm_public_ip.master_pip.0.ip_address}"
+  bastion_host = "${element(concat(azurerm_public_ip.bootnode_pip.*.ip_address, azurerm_public_ip.master_pip.*.ip_address), 0)}"
 
   # Provide IP addresses for boot, master, mgmt, va, proxy and workers
-  boot-node = "${element(azurerm_network_interface.master_nic.*.private_ip_address, 0)}"
+  boot-node = "${element(concat(azurerm_network_interface.boot_nic.*.private_ip_address, azurerm_network_interface.master_nic.*.private_ip_address), 0)}"
 
   icp-host-groups = {
     master      = ["${azurerm_network_interface.master_nic.*.private_ip_address}"]
@@ -27,7 +27,7 @@ module "icpprovision" {
   # Workaround for terraform issue #10857
   # When this is fixed, we can work this out autmatically
 
-  cluster_size  = "${var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"] + var.management["nodes"]}"
+  cluster_size  = "${var.boot["nodes"] + var.master["nodes"] + var.worker["nodes"] + var.proxy["nodes"] + var.management["nodes"]}"
 
   icp_configuration = {
     "network_cidr"              = "${var.network_cidr}"
@@ -35,16 +35,19 @@ module "icpprovision" {
     "ansible_user"              = "icpdeploy"
     "ansible_become"            = "true"
     "default_admin_password"    = "${var.icpadmin_password}"
-    "cluster_lb_address"         = "${element(azurerm_public_ip.master_pip.*.fqdn, 0)}"
-    "proxy_lb_address"           = "${element(azurerm_public_ip.proxy_pip.*.fqdn, 0)}"
+    "cluster_lb_address"        = "${element(azurerm_public_ip.master_pip.*.fqdn, 0)}"
+    "proxy_lb_address"          = "${element(azurerm_public_ip.proxy_pip.*.fqdn, 0)}"
     "cluster_CA_domain"         = "${azurerm_public_ip.master_pip.fqdn}"
     "cluster_name"              = "${var.cluster_name}"
 
+    # RHEL requires firewall enabled flag
+    "firewall_enabled"          = "true"
+
     # An admin password will be generated if not supplied in terraform.tfvars
-    "default_admin_password"          = "${local.icppassword}"
+    "default_admin_password"    = "${local.icppassword}"
 
     # This is the list of disabled management services
-    "management_services"             = "${local.disabled_management_services}"
+    "management_services"       = "${local.disabled_management_services}"
 
     "calico_ip_autodetection_method" = "can-reach=${azurerm_network_interface.master_nic.0.private_ip_address}"
     "kubelet_nodename"          = "nodename"
@@ -57,9 +60,9 @@ module "icpprovision" {
     # Azure specific configurations
     # We don't need ip in ip with Azure networking
     "calico_ipip_enabled"       = "false"
-    "calico_networking_backend"  = "none"
-    "calico_ipam_type"           = "host-local"
-    "calico_ipam_subnet"         = "usePodCidr"
+    "calico_networking_backend" = "none"
+    "calico_ipam_type"          = "host-local"
+    "calico_ipam_subnet"        = "usePodCidr"
 
     "azure"                  = {
       # Common authantication details for both kubelet and controller manager

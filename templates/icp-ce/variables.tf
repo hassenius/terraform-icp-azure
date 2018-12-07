@@ -78,7 +78,8 @@ variable "os_image_map" {
   default = {
     rhel_publisher   = "RedHat"
     rhel_offer       = "RHEL"
-    rhel_sku         = "7.4"
+    #rhel_sku         = "7.5"
+    rhel_sku         = "7-RAW-CI"
     rhel_version     = "latest"
     ubuntu_publisher = "Canonical"
     ubuntu_offer     = "UbuntuServer"
@@ -114,8 +115,20 @@ variable "cluster_name" {
   default     = "myicp"
 }
 
-# TODO: Create option to have etcd on separate VM
-# TODO: Find SSD option
+variable "boot" {
+  type = "map"
+  default = {
+    nodes         = "0"
+    name          = "bootnode"
+    os_image      = "ubuntu"
+    vm_size       = "Standard_A2_v2"
+    os_disk_type  = "Standard_LRS"
+    os_disk_size  = "100"
+    docker_disk_size = "100"
+    docker_disk_type = "StandardSSD_LRS"
+    enable_accelerated_networking = "false"
+  }
+}
 
 variable "master" {
   type = "map"
