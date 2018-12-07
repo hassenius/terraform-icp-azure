@@ -152,7 +152,7 @@ variable "master" {
 variable "proxy" {
   type = "map"
   default = {
-    nodes         = "0"
+    nodes         = "3"
     name          = "proxy"
     vm_size       = "Standard_A2_v2"
     os_disk_type  = "Standard_LRS"
