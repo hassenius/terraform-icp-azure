@@ -25,7 +25,7 @@ Each template example provided is highly customizable, but are all configured wi
 
     Deploy ICP Enterprise Edition in a highly available configuration, with cluster deployed across 3 Azure availability zones
 
-3. icp-ee-as (comming soon)
+3. [templates/icp-ee-as](templates/icp-ee-as)
 
     Deploy ICP Enterprise Edition in a highly available configuration, with cluster availability managed using Azure Availability Sets
 

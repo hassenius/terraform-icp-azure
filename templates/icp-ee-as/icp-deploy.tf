@@ -4,7 +4,6 @@
 ##################################
 
 # TODO: Add azure-disk and azure-file volumes
-# TODO: Separate vmadmin key and icpdeploy key
 
 data "azurerm_client_config" "client_config" {}
 
@@ -20,7 +19,7 @@ locals {
 }
 
 module "icpprovision" {
-  source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.3.7"
+  source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.2"
 
   bastion_host = "${azurerm_public_ip.bootnode_pip.ip_address}"
 
@@ -37,7 +36,7 @@ module "icpprovision" {
       0, var.management["nodes"] > 0 ? length(azurerm_network_interface.management_nic.*.private_ip_address) : length(azurerm_network_interface.master_nic.*.private_ip_address))}"
   }
 
-  icp-version = "${local.inception_image}"
+  icp-inception = "${local.inception_image}"
 
   # Workaround for terraform issue #10857
   # When this is fixed, we can work this out autmatically
@@ -61,10 +60,10 @@ module "icpprovision" {
     "docker_password"           = "${var.registry_password}"
 
     # An admin password will be generated if not supplied in terraform.tfvars
-    "default_admin_password"          = "${local.icppassword}"
-
+    # TODO REMOVE "default_admin_password"          = "${local.icppassword}"
+    "default_admin_password"    = "${var.icpadmin_password}"
     # This is the list of disabled management services
-    "management_services"             = "${local.disabled_management_services}"
+    "management_services"       = "${local.disabled_management_services}"
 
 
     "calico_ip_autodetection_method" = "first-found"
@@ -121,63 +120,11 @@ module "icpprovision" {
           "excludeMasterFromStandardLB" = "true"
           "useManagedIdentityExtension" = "false"
       }
-      # Common authantication details for both kubelet and controller manager
-      # "auth" = {
-      #     "cloud"               = "AzurePublicCloud"
-      #     "useInstanceMetadata" = "true"
-      #     "tenantId"            = "${data.azurerm_client_config.client_config.tenant_id}"
-      #     "subscriptionId"      = "${data.azurerm_client_config.client_config.subscription_id}"
-      #     "resourceGroup"       = "${azurerm_resource_group.icp.name}"
-      # }
-      # Authentication information for kubelet
-      # "kubelet_auth" = {
-      #     "useManagedIdentityExtension" = "true"
-      # }
-      # Authentication information specific for controller
-      ## Controller will need additional permissions as it needs to create routes in the router table,
-      ## interact with storage and networking resources
-      # "controller_auth" = {
-      #     "aadClientId"     = "${var.aadClientId}"
-      #     "aadClientSecret" = "${var.aadClientSecret}"
-      # }
-      # Cluster configuration for controller manager
-      # "cluster_conf" = {
-      #     "location"      = "${azurerm_resource_group.icp.location}"
-      #     "subnetName"    = "${azurerm_subnet.container_subnet.name}"
-      #     "vnetName"      = "${azurerm_virtual_network.icp_vnet.name}"
-      #     "vnetResourceGroup" = "${azurerm_resource_group.icp.name}"
-      #     "routeTableName" = "${azurerm_route_table.routetb.name}"
-      #     "cloudProviderBackoff" = "false"
-      #     "loadBalancerSku"           = "Standard"
-      #     #"primaryAvailabilitySetName" = "${basename(element(azurerm_virtual_machine.worker.*.availability_set_id, 0))}"# "workers_availabilityset"
-      #     "securityGroupName"          = "${azurerm_network_security_group.worker_sg.name}"# "hktest-worker-sg"
-      #     "excludeMasterFromStandardLB"= "true"
-      # }
     }
 
     # We'll insert a dummy value here to create an implicit dependency on VMs in Terraform
     "dummy_waitfor" = "${length(concat(azurerm_virtual_machine.boot.*.id, azurerm_virtual_machine.master.*.id, azurerm_virtual_machine.worker.*.id, azurerm_virtual_machine.management.*.id))}"
   }
-
-
-  # Attempt for patched icp-inception
-  # hooks = {
-  #   "cluster-postconfig" = [
-  #     "while [ ! -f /var/lib/cloud/instance/boot-finished ] ; do echo Waiting for image load to complete on $(cat /etc/hostname) ; sleep 10s ; done"
-  #   ]
-  #   "boot-preconfig" = [
-  #     "while [ ! -f /var/lib/cloud/instance/boot-finished ] ; do sleep 10s ; done",
-  #     "cd /tmp ; wget https://raw.githubusercontent.com/ibm-cloud-architecture/terraform-module-icp-deploy/master/scripts/boot-master/install-docker.sh",
-  #     "chmod a+x /tmp/install-docker.sh ; /tmp/install-docker.sh",
-  #     "git clone https://github.com/hassenius/icp-azure-patch.git",
-  #     "cd /tmp/icp-azure-patch ; git checkout icp31-ce ",
-  #     "sudo docker tag ibmcom/icp-inception-amd64:3.1.0-ee ibmcom/icp-inception:3.1.0",
-  #     "sudo docker build -t ibmcom/icp-inception:3.1.0-azure ."
-  #   ]
-  #   "postinstall" = [
-  #     "echo Here we will load some storage stuff"
-  #   ]
-  # }
 
   generate_key = true
 

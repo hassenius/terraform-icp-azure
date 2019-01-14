@@ -15,7 +15,7 @@ We currently have two templates available
   * This template deploys ICP Enterprise Edition across three Azure Availability Zones.
   * This configuration requires access to ICP Enterprise Edition, typically supplied as a tarball
 
-- icp-ee-as (comming soon)
+- [icp-ee-as](icp-ee-as)
   * This template deploys ICP Enterprise Edition in a single Azure Availability Zone, but with availability managed by Azure Availability Sets.
   * This configuration requires access to ICP Enterprise Edition, typically supplied as a tarball
 

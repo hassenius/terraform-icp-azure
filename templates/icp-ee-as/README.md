@@ -126,5 +126,3 @@ After a few minutes the load balancer will be available and you can see the IP a
   kubernetes   ClusterIP      10.1.0.1     <none>           443/TCP        12h
   mynginx      LoadBalancer   10.1.0.220   51.145.183.111   80:30432/TCP   2m
   ```
-
-#### Using the Azure Disks
