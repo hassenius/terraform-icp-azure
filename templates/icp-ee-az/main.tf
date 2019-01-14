@@ -41,7 +41,6 @@ resource "random_id" "adminpassword" {
 }
 
 locals {
-  icppassword    = "${var.icpadmin_password != "" ? "${var.icpadmin_password}" : "${random_id.adminpassword.hex}"}"
 
   # This is just to have a long list of disabled items to use in icp-deploy.tf
   disabled_list = "${list("disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled","disabled")}"

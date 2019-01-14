@@ -51,13 +51,12 @@ module "icpprovision" {
     "cluster_name"              = "${var.cluster_name}"
 
     "private_registry_enabled"  = "${var.private_registry != "" ? "true" : "false"}"
-    # "private_registry_server"   = "${var.private_registry}"
     "image_repo"                = "${var.private_registry != "" ? "${var.private_registry}/${dirname(var.icp_inception_image)}" : ""}"
     "docker_username"           = "${var.registry_username}"
     "docker_password"           = "${var.registry_password}"
 
     # An admin password will be generated if not supplied in terraform.tfvars
-    # TODO DELETE "default_admin_password"          = "${local.icppassword}"
+    "default_admin_password"          = "${var.icpadmin_password}"
 
     # This is the list of disabled management services
     "management_services"             = "${local.disabled_management_services}"
