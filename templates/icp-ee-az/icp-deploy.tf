@@ -19,7 +19,7 @@ locals {
 }
 
 module "icpprovision" {
-  source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.3.7"
+  source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.2"
 
   bastion_host = "${azurerm_public_ip.bootnode_pip.ip_address}"
 
@@ -33,7 +33,7 @@ module "icpprovision" {
     management  = ["${azurerm_network_interface.management_nic.*.private_ip_address}"]
   }
 
-  icp-version = "${local.inception_image}"
+  icp-inception = "${local.inception_image}"
 
   # Workaround for terraform issue #10857
   # When this is fixed, we can work this out autmatically
@@ -57,7 +57,7 @@ module "icpprovision" {
     "docker_password"           = "${var.registry_password}"
 
     # An admin password will be generated if not supplied in terraform.tfvars
-    "default_admin_password"          = "${local.icppassword}"
+    # TODO DELETE "default_admin_password"          = "${local.icppassword}"
 
     # This is the list of disabled management services
     "management_services"             = "${local.disabled_management_services}"

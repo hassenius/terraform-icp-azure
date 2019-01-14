@@ -8,7 +8,7 @@
 data "azurerm_client_config" "client_config" {}
 
 module "icpprovision" {
-  source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=2.3.7"
+  source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.2"
 
   bastion_host = "${element(concat(azurerm_public_ip.bootnode_pip.*.ip_address, azurerm_public_ip.master_pip.*.ip_address), 0)}"
 
@@ -22,7 +22,7 @@ module "icpprovision" {
     management  = ["${azurerm_network_interface.management_nic.*.private_ip_address}"]
   }
 
-  icp-version = "${var.icp_version}"
+  icp-inception = "${var.icp_version}"
 
   # Workaround for terraform issue #10857
   # When this is fixed, we can work this out autmatically
@@ -34,7 +34,6 @@ module "icpprovision" {
     "service_cluster_ip_range"  = "${var.cluster_ip_range}"
     "ansible_user"              = "icpdeploy"
     "ansible_become"            = "true"
-    "default_admin_password"    = "${var.icpadmin_password}"
     "cluster_lb_address"        = "${element(azurerm_public_ip.master_pip.*.fqdn, 0)}"
     "proxy_lb_address"          = "${element(azurerm_public_ip.proxy_pip.*.fqdn, 0)}"
     "cluster_CA_domain"         = "${azurerm_public_ip.master_pip.fqdn}"
