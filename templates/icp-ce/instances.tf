@@ -76,6 +76,8 @@ resource "azurerm_virtual_machine" "boot" {
     type = "SystemAssigned"
   }
 
+  delete_os_disk_on_termination = true
+  delete_data_disks_on_termination = true 
   # Enable using a different OS for the boot node
   storage_image_reference {
     publisher = "${lookup(var.os_image_map, join("_publisher", list(var.boot["os_image"], "")))}"
