@@ -1,11 +1,15 @@
 
 # Deploying IBM Cloud Private Enterprise Edition on Azure using Terraform
 
-This template provides a basic deployment of a single master, single proxy, single management node and three worker nodes azure VMs. Both Maser and Proxy are assigned public IP addresses so they can be easily accessed over the internet.
+This template deploys ICP Enterprise Edition across three Azure Availability Zones.
 
 
 Limitations
 - Since Azure Cloud Provider for Kubernetes 1.11 is not Zone aware, so you should not use Dynamic Volume Provisioning with a multi-zone setup.
+
+## Infrastructure Architecture
+The following diagram outlines the infrastructure architecture.
+![Architecture](../../static/ICP-Azure-az.png)
 
 ## Using the Terraform templates
 

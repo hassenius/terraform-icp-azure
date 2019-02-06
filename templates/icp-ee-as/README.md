@@ -1,11 +1,12 @@
 
 # Deploying IBM Cloud Private Enterprise Edition on Azure using Terraform
 
-This template provides a highly available deployment of ICP.
 
+This template deploys ICP Enterprise Edition in a single Azure Data Centre, but with availability managed by Azure Availability Sets.
 
-It uses
-- Create a zone redundant public IP
+## Infrastructure Architecture
+The following diagram outlines the infrastructure architecture.
+![Architecture](../../static/ICP-Azure-as.png)
 
 ## Using the Terraform templates
 

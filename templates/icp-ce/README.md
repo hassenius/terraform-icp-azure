@@ -10,6 +10,10 @@ This template is suitable for initial tests, and validations.
 
 Note: This template uses the included temporary disk for the VM as the backing disk for Docker. This performant SSD disk, but certain azure maintenance events may delete the content of this disk, affecting the stability of your cluster.
 
+## Infrastructure Architecture
+The following diagram outlines the infrastructure architecture.
+![Architecture](../../static/ICP-CE-Azure.png)
+
 
 ## Using the Terraform template
 
