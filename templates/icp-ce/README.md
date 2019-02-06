@@ -14,6 +14,19 @@ Note: This template uses the included temporary disk for the VM as the backing d
 The following diagram outlines the infrastructure architecture.
 ![Architecture](../../static/ICP-CE-Azure.png)
 
+## Resources created by this template
+|Resource type            | Resources      |
+|----------------|-----------------------------|
+| azurerm_resource_group | 1 new resource group for ICP cluster |
+| azurerm_virtual_network | 1 new virtual network for ICP cluster |
+| azurerm_route_table | 1 new route table |
+| azurerm_subnet | <ul><li>1 subnet for cluster VMs<li>1 subnet for container network</ul> |
+| azurerm_public_ip | <ul><li>bootnode pip (if enabled)<li>master pip<li>proxy pip</ul> |
+| azurerm_network_interface | <ul><li>boot nic (if enabled)<li>master nic<li>proxy nic<li>management nic<li>worker nic</ul> |
+| azurerm_network_security_group | <ul><li>boot_sg<li>master_sg<li>proxy_sg<li>worker_sg</ul> |
+| azurerm_virtual_machine | <ul><li>boot (if enabled)<li>master<li>proxy<li>management<li>worker</ul> |
+| azurerm_availability_set | <ul><li>workers</ul> |
+
 
 ## Using the Terraform template
 

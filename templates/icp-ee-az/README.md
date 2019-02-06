@@ -11,6 +11,23 @@ Limitations
 The following diagram outlines the infrastructure architecture.
 ![Architecture](../../static/ICP-Azure-az.png)
 
+## Resources created by this template
+|Resource type            | Resources      |
+|----------------|-----------------------------|
+| azurerm_resource_group | 1 new resource group for ICP cluster |
+| azurerm_virtual_network | 1 new virtual network for ICP cluster |
+| azurerm_route_table | 1 new route table |
+| azurerm_subnet | <ul><li>1 subnet for cluster VMs<li>1 subnet for container network</ul> |
+| azurerm_public_ip | <ul><li>bootnode pip<li>master pip</ul> |
+| azurerm_network_interface | <ul><li>boot nic<li>master nic<li>proxy nic<li>management nic<li>worker nic</ul> |
+| azurerm_network_security_group | <ul><li>boot_sg<li>master_sg<li>proxy_sg<li>worker_sg</ul> |
+| azurerm_lb | <ul><li>Single Standard SKU LoadBalancer</ul>
+| azurerm_lb_rule | <ul><li>master_rule<li>proxy_rule</ul> |
+| azurerm_lb_backend_address_pool | <ul><li>masterlb_pool<li>proxylb_pool</ul>
+| azurerm_network_interface_backend_address_pool_association | <ul><li>masterlb<li>proxylb</ul> |
+| azurerm_virtual_machine | <ul><li>boot<li>master<li>proxy<li>management<li>worker</ul> |
+
+
 ## Using the Terraform templates
 
 1. git clone the repository
