@@ -108,7 +108,7 @@ variable "icpadmin_password" {
 }
 variable "icp_version" {
     description = "ICP Version"
-    default = "3.1.1"
+    default = "3.1.2"
 }
 variable "cluster_name" {
   description = "Deployment name for resources prefix"

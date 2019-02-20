@@ -111,7 +111,7 @@ variable "icpadmin_password" {
 }
 variable "icp_inception_image" {
     description = "ICP Inception image to use"
-    default = "ibmcom/icp-inception-amd64:3.1.1-ee"
+    default = "ibmcom/icp-inception-amd64:3.1.2-ee"
 }
 variable "cluster_name" {
   description = "Deployment name for resources prefix"

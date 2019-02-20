@@ -19,7 +19,7 @@ locals {
 }
 
 module "icpprovision" {
-  source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.2"
+  source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.7"
 
   bastion_host = "${azurerm_public_ip.bootnode_pip.ip_address}"
 
@@ -65,8 +65,8 @@ module "icpprovision" {
     "kubelet_nodename"          = "nodename"
     "cloud_provider"            = "azure"
 
-    # If you want to use calico in policy only mode and Azure routed routes.
-    "kube_controller_manager_extra_args" = ["--allocate-node-cidrs=true"]
+    # Azure specific arguments
+    "kube_controller_manager_extra_args" = ["--allocate-node-cidrs=true", "--feature-gates=ServiceNodeExclusion=true"]
     "kubelet_extra_args" = ["--enable-controller-attach-detach=true"]
 
     # Azure specific configurations

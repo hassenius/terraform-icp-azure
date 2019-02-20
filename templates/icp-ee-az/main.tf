@@ -35,11 +35,6 @@ resource "random_id" "clusterid" {
   byte_length = 4
 }
 
-# Generate a random string in case user wants us to generate admin password
-resource "random_id" "adminpassword" {
-  byte_length = "16"
-}
-
 locals {
 
   # This is just to have a long list of disabled items to use in icp-deploy.tf
