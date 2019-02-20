@@ -56,7 +56,7 @@ The following diagram outlines the infrastructure architecture.
 |cluster_name        |myicp          |No      |Deployment name for resources prefix    |
 |ssh_public_key      |               |No      |SSH Public Key to add to authorized_key for admin_username. Required if you disable password authentication |
 |disable_password_authentication|true           |No      |Whether to enable or disable ssh password authentication for the created Azure VMs. Default: true|
-|icp_version         |3.1.1         |No      |ICP Version                             |
+|icp_version         |3.1.2         |No      |ICP Version                             |
 |cluster_ip_range    |10.1.0.0/24    |No      |ICP Service Cluster IP Range            |
 |network_cidr        |10.0.128.0/17    |No      |ICP Network CIDR                        |
 |instance_name       |icp            |No      |Name of the deployment. Will be added to virtual machine names|
@@ -69,7 +69,6 @@ The following diagram outlines the infrastructure architecture.
 #### Availability Zones
 Kubernetes adds support for Azure Availability Zones in version 1.12, as an alpha feature.
 Read more about it [here](https://github.com/kubernetes/cloud-provider-azure/blob/master/docs/using-availability-zones.md)
-ICP 3.1.1 includes Kubernetes 1.11 in which the Azure Cloud Provider is not Zone aware. This means that features such as Dynamic PV provisioning should not be used with this template.
 
 Here is an example terraform.tfvars file:
 

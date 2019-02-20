@@ -54,7 +54,7 @@ The following diagram outlines the infrastructure architecture.
 |cluster_name        |myicp          |No      |Deployment name for resources prefix    |
 |ssh_public_key      |               |No      |SSH Public Key to add to authorized_key for admin_username. Required if you disable password authentication |
 |disable_password_authentication|true           |No      |Whether to enable or disable ssh password authentication for the created Azure VMs. Default: true|
-|icp_version         |3.1.1         |No      |ICP Version                             |
+|icp_version         |3.1.2         |No      |ICP Version                             |
 |cluster_ip_range    |10.0.0.1/24    |No      |ICP Service Cluster IP Range            |
 |network_cidr        |10.1.0.0/16    |No      |ICP Network CIDR                        |
 |instance_name       |icp            |No      |Name of the deployment. Will be added to virtual machine names|
@@ -102,9 +102,9 @@ Open the Console URL in a web browser and log in with the Admin Username and Adm
 
 Follow the instructions outlined [here](../../README.md)
 
-A simple test can be to create a deployment with two nginx pods that are exposed via external load balancer. To do this using kubectl follow the instructions on [IBM KnowledgeCenter Kubectl CLI](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.0/manage_cluster/cfc_cli.html) to set up the command line client.
+A simple test can be to create a deployment with two nginx pods that are exposed via external load balancer. To do this using kubectl follow the instructions on [IBM KnowledgeCenter Kubectl CLI](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.2/manage_cluster/cfc_cli.html) to set up the command line client.
 
-By default this deployment has image security enforcement enabled. You can read about Image security on [IBM KnowledgeCenter Image Security](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.0/manage_images/image_security.html) Ensure the appropriate policies are in place.
+By default this deployment has image security enforcement enabled. You can read about Image security on [IBM KnowledgeCenter Image Security](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.2/manage_images/image_security.html) Ensure the appropriate policies are in place.
 
 To allow pulling nginx from Docker Hub container registry, create a file with this content:
   ```
