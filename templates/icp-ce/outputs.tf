@@ -15,9 +15,9 @@ output "ICP Admin Username" {
 }
 
 output "ICP Admin Password" {
-  value = "${local.icppassword}"
+  value = "${module.icpprovision.default_admin_password}"
 }
 
 output "cloudctl" {
-  value = "cloudctl login --skip-ssl-validation -a https://${element(azurerm_public_ip.master_pip.*.fqdn, 0)}:8443 -u admin -p ${local.icppassword} -n default -c id-${var.cluster_name}-account"
+  value = "cloudctl login --skip-ssl-validation -a https://${element(azurerm_public_ip.master_pip.*.fqdn, 0)}:8443 -u admin -p ${module.icpprovision.default_admin_password} -n default -c id-${var.cluster_name}-account"
 }
