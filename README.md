@@ -10,7 +10,7 @@ These Terraform example templates uses the Terraform AzureRM Provider to provisi
 - Access to ICP Images tarball if deploying ICP Enterprise Edition templates
 
 All templates are tested on Ubuntu 16.04 and RHEL.
-Details on running RHEL in production [here](doc/rhel.md)
+Details on running RHEL in production [here](docs/rhel.md)
 
 
 ## Available templates
