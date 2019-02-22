@@ -60,6 +60,9 @@ You can use `cloudctl` to configure you local `kubectl` and `helm` command line 
 
 For instructions on how to install cloudctl go to the IBM [KnowledgeCenter](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.1/manage_cluster/install_cli.html)
 
+## Azure Network Options and information
+You can read more about the Azure network and options in [docs/azure-networking.md](docs/azure-networking.md)
+
 ## Using integrated Azure functionality
 
 Depending on your configuration you can use integrated functionality from the Azure Cloud provider for Kubernetes.

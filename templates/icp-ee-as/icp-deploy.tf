@@ -108,7 +108,7 @@ module "icpprovision" {
           "aadClientId"         = "${var.aadClientId}"
           "aadClientSecret"     = "${var.aadClientSecret}"
           "location"            = "${azurerm_resource_group.icp.location}"
-          "subnetName"          = "${azurerm_subnet.container_subnet.name}"
+          "subnetName"          = "${element(compact(concat(list("${var.container_subnet_id}"), azurerm_subnet.container_subnet.*.id)), 0)}"
           "vnetName"            = "${azurerm_virtual_network.icp_vnet.name}"
           "vnetResourceGroup"   = "${azurerm_resource_group.icp.name}"
           "routeTableName"      = "${azurerm_route_table.routetb.name}"

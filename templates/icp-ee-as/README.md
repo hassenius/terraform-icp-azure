@@ -48,7 +48,15 @@ The following diagram outlines the infrastructure architecture.
 |os_image            |ubuntu         |No      |Select from Ubuntu (ubuntu) or RHEL (rhel) for the Operating System. Details on RHEL [here](../../docs/rhel.md)|
 |admin_username      |vmadmin        |No      |linux vm administrator user name        |
 | *Azure network settings*| | |
-|virtual_network_name|vnet           |No      |The name for the virtual network.       |
+|virtual_network_name|icp_vnet        | No      |The name for the virtual network. Leave blank and populate *_subnet_id to use existing Azure Virtual Network. See [azure-networking.md](../../docs/azure-networking.md) for details. |
+|virtual_network_cidr | 10.0.0.0/16 | No | cidr for the Azure virtual network if creating new |
+| subnet_name | icp_subnet | No | Name of the Subnet where VMs are placed. See [azure-networking.md](../../docs/azure-networking.md) for details. |
+| subnet_prefix | 10.0.0.0/24 | No | The address prefix to use for the VM subnet. |
+| controlplane_subnet_name |  | No | The name of the controlplane subnet. Leave blank single subnet for cluster |
+| controlplane_subnet_prefix |  | No | The address prefix to use if creating separate controlplane subnet. |
+| vm_subnet_id | | No | ID of vm subnet if using existing VNET. Only when var.virtual_network_name is empty. See [azure-networking.md](../../docs/azure-networking.md) for details.  |
+| controlplane_subnet_id |  | No | ID of controlplane subnet if using existing VNET. Only when var.virtual_network_name is empty and want control plane separate from workers |
+| container_subnet_id |  | No | ID of container subnet if using existing VNET. Only when var.virtual_network_name is empty |
 |route_table_name    |icp_route      |No      |The name for the route table.           |
 | * ICP Settings * | | | |
 |cluster_name        |myicp          |No      |Deployment name for resources prefix. Will form part of DNS names, so must only contain alphanumeric characters and -     |
@@ -60,7 +68,8 @@ The following diagram outlines the infrastructure architecture.
 |instance_name       |icp            |No      |Name of the deployment. Will be added to virtual machine names|
 |icpadmin_password   |admin          |No      |ICP admin password                      |
 
-
+## Azure Network Options and information
+You can read more about the Azure network and options in [docs/azure-networking.md](../../docs/azure-networking.md)
 
 ### Notes on Azure Cloud Provider for Kubernetes
 

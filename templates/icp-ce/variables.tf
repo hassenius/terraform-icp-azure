@@ -27,8 +27,23 @@ variable "resource_group" {
   default = "icp_rg"
 }
 
+variable "container_subnet_id" {
+  description = "ID of container subnet if using existing VNET. Only when var.virtual_network_name is empty"
+  default = ""
+}
+
+variable "vm_subnet_id" {
+  description = "ID of vm subnet if using existing VNET. Only when var.virtual_network_name is empty"
+  default = ""
+}
+
+variable "controlplane_subnet_id" {
+  description = "ID of controlplane subnet if using existing VNET. Only when var.virtual_network_name is empty and want control plane separate from workers"
+  default = ""
+}
+
 variable "virtual_network_name" {
-  description = "The name for the Azure virtual network."
+  description = "The name for the Azure virtual network. Leave blank and populate *_subnet_id to use existing Azure Virtual Network"
   default     = "icp_vnet"
 }
 
@@ -48,6 +63,17 @@ variable "subnet_prefix" {
   description = "The address prefix to use for the VM subnet."
   default     = "10.0.0.0/24"
 }
+
+variable "controlplane_subnet_name" {
+  description = "The name of the controlplane subnet. Leave blank single subnet for cluster"
+  default     = ""
+}
+
+variable "controlplane_subnet_prefix" {
+  description = "The address prefix to use if creating separate controlplane subnet."
+  default     = ""
+}
+
 variable "storage_account_tier" {
   description = "Defines the Tier of storage account to be created. Valid options are Standard and Premium."
   default     = "Standard"
