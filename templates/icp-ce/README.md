@@ -48,7 +48,7 @@ The following diagram outlines the infrastructure architecture.
 |management|{'vm_size':'Standard_A4_v2'<br>'nodes':1<br>'name':'mgmt'}|No | Management node instance configuration|
 |proxy|{'vm_size':'Standard_A4_v2'<br>'nodes':1<br>'name':'proxy'}|No| Proxy node instance configuration |
 |worker |{'vm_size':'Standard_A4_v2'<br>'nodes':3<br>'name':'worker'}|No| Worker node instance configuration |
-|os_image            |ubuntu         |No      |Select from Ubuntu (ubuntu) or RHEL (rhel) for the Operating System. Details on RHEL [here](../../doc/rhel.md)|
+|os_image            |ubuntu         |No      |Select from Ubuntu (ubuntu) or RHEL (rhel) for the Operating System. Details on RHEL [here](../../docs/rhel.md)|
 |admin_username      |vmadmin        |No      |linux vm administrator user name        |
 | *Azure network settings*| | |
 |virtual_network_name|vnet           |No      |The name for the virtual network.       |
@@ -82,7 +82,7 @@ worker = {
 ```
 
 #### Red Hat support
-Details on RHEL support [here](../../doc/rhel.md)
+Details on RHEL support [here](../../docs/rhel.md)
 
 ### Using the environment
 
