@@ -36,13 +36,13 @@ The following diagram outlines the infrastructure architecture.
 
 | variable           | default       |required| description                            |
 |--------------------|---------------|--------|----------------------------------------|
-| *Azure account options* | | |
+| **Azure account options** | | |
 |resource_group      |icp_rg         |No      |Azure resource group name               |
 |location            |West Europe    |No      |Region to deploy to                     |
 |storage_account_tier|Standard       |No      |Defines the Tier of storage account to be created. Valid options are Standard and Premium.|
 |storage_replication_type|LRS            |No      |Defines the Replication Type to use for this storage account. Valid options include LRS, GRS etc.|
 |default_tags        |{u'Owner': u'icpuser', u'Environment': u'icp-test'}|No      |Map of default tags to be assign to any resource that supports it|
-| *ICP Virtual machine settings* | | |
+| **ICP Virtual machine settings** | | |
 |boot |{'vm_size':'Standard_A4_v2'<br>'nodes':0<br>'name':'boot'}|No | Boot node instance configuration |
 |master |{'vm_size':'Standard_A4_v2'<br>'nodes':1<br>'name':'master'}|No | Master node instance configuration |
 |management|{'vm_size':'Standard_A4_v2'<br>'nodes':1<br>'name':'mgmt'}|No | Management node instance configuration|
@@ -50,7 +50,7 @@ The following diagram outlines the infrastructure architecture.
 |worker |{'vm_size':'Standard_A4_v2'<br>'nodes':3<br>'name':'worker'}|No| Worker node instance configuration |
 |os_image            |ubuntu         |No      |Select from Ubuntu (ubuntu) or RHEL (rhel) for the Operating System. Details on RHEL [here](../../docs/rhel.md)|
 |admin_username      |vmadmin        |No      |linux vm administrator user name        |
-| *Azure network settings*| | |
+| **Azure network settings**| | |
 |virtual_network_name|icp_vnet        | No      |The name for the virtual network. Leave blank and populate *_subnet_id to use existing Azure Virtual Network. See [azure-networking.md](../../docs/azure-networking.md) for details. |
 |virtual_network_cidr | 10.0.0.0/16 | No | cidr for the Azure virtual network if creating new |
 | subnet_name | icp_subnet | No | Name of the Subnet where VMs are placed. See [azure-networking.md](../../docs/azure-networking.md) for details. |
@@ -61,7 +61,7 @@ The following diagram outlines the infrastructure architecture.
 | controlplane_subnet_id |  | No | ID of controlplane subnet if using existing VNET. Only when var.virtual_network_name is empty and want control plane separate from workers |
 | container_subnet_id |  | No | ID of container subnet if using existing VNET. Only when var.virtual_network_name is empty |
 |route_table_name    |icp_route      |No      |The name for the route table.           |
-| *ICP Settings* | | | |
+| **ICP Settings** | | | |
 |cluster_name        |myicp          |No      |Deployment name for resources prefix. Will form part of DNS names, so must only contain alphanumeric characters and -    |
 |ssh_public_key      |               |No      |SSH Public Key to add to authorized_key for admin_username. Required if you disable password authentication |
 |disable_password_authentication|true           |No      |Whether to enable or disable ssh password authentication for the created Azure VMs. Default: true|
