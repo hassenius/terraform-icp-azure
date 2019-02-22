@@ -4,9 +4,6 @@
 This template deploys ICP Enterprise Edition across three Azure Availability Zones.
 
 
-Limitations
-- Since Azure Cloud Provider for Kubernetes 1.11 is not Zone aware, so you should not use Dynamic Volume Provisioning with a multi-zone setup.
-
 ## Infrastructure Architecture
 The following diagram outlines the infrastructure architecture.
 ![Architecture](../../static/ICP-Azure-az.png)
@@ -53,7 +50,7 @@ The following diagram outlines the infrastructure architecture.
 |virtual_network_name|icp_vnet           |No      |The name for the virtual network.       |
 |route_table_name    |icp_route      |No      |The name for the route table.           |
 | **ICP Settings** | | | |
-|cluster_name        |myicp          |No      |Deployment name for resources prefix    |
+|cluster_name        |myicp          |No      |Deployment name for resources prefix. Will form part of DNS names, so must only contain alphanumeric characters and -     |
 |ssh_public_key      |               |No      |SSH Public Key to add to authorized_key for admin_username. Required if you disable password authentication |
 |disable_password_authentication|true           |No      |Whether to enable or disable ssh password authentication for the created Azure VMs. Default: true|
 |icp_version         |3.1.2         |No      |ICP Version                             |
@@ -102,47 +99,4 @@ Open the Console URL in a web browser and log in with the Admin Username and Adm
 
 
 #### Using the Azure Loadbalancer
-
-A simple test can be to create a deployment with two nginx pods that are exposed via external load balancer. To do this using kubectl follow the instructions on [IBM KnowledgeCenter Kubectl CLI](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.0/manage_cluster/cfc_cli.html) to set up the command line client.
-
-By default this deployment has image security enforcement enabled. You can read about Image security on [IBM KnowledgeCenter Image Security](https://www.ibm.com/support/knowledgecenter/SSBS6K_3.1.0/manage_images/image_security.html) Ensure the appropriate policies are in place.
-
-To allow pulling nginx from Docker Hub container registry, create a file with this content:
-  ```
-  apiVersion: securityenforcement.admission.cloud.ibm.com/v1beta1
-  kind: ImagePolicy
-  metadata:
-    name: allow-nginx-dockerhub
-  spec:
-   repositories:
-   # nginx from Docker hub Container Registry
-    - name: "docker.io/nginx/*"
-      policy:
-  ```
-
-Then apply this policy in the namespace you're working in
-
-  ```
-  $ kubectl apply -f
-  ```
-
-Now you can deploy two replicas of an nginx pod
-
-  ```
-  kubectl run mynginx --image=nginx --replicas=2 --port=80
-  ```
-
-Finally expose this deployment
-
-  ```
-  kubectl expose deployment mynginx --port=80 --type=LoadBalancer
-  ```
-
-After a few minutes the load balancer will be available and you can see the IP address of the loadbalancer
-
-  ```
-  $ kubectl get services
-  NAME         TYPE           CLUSTER-IP   EXTERNAL-IP      PORT(S)        AGE
-  kubernetes   ClusterIP      10.1.0.1     <none>           443/TCP        12h
-  mynginx      LoadBalancer   10.1.0.220   51.145.183.111   80:30432/TCP   2m
-  ```
+See details and examples for exposing your workloads with Azure LoadBalancer in [azure-loadbalancer.md](../../docs/azure-loadbalancer.md)

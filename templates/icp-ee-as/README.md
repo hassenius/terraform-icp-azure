@@ -51,7 +51,7 @@ The following diagram outlines the infrastructure architecture.
 |virtual_network_name|vnet           |No      |The name for the virtual network.       |
 |route_table_name    |icp_route      |No      |The name for the route table.           |
 | * ICP Settings * | | | |
-|cluster_name        |myicp          |No      |Deployment name for resources prefix    |
+|cluster_name        |myicp          |No      |Deployment name for resources prefix. Will form part of DNS names, so must only contain alphanumeric characters and -     |
 |ssh_public_key      |               |No      |SSH Public Key to add to authorized_key for admin_username. Required if you disable password authentication |
 |disable_password_authentication|true           |No      |Whether to enable or disable ssh password authentication for the created Azure VMs. Default: true|
 |icp_version         |3.1.2         |No      |ICP Version                             |
@@ -94,9 +94,6 @@ cloudctl = cloudctl login --skip-ssl-validation -a https://hk311test-408b38a9.we
 ```
 
 Open the Console URL in a web browser and log in with the Admin Username and Admin Password provided from the Terraform template output.
-
-
-#### Using the Azure Loadbalancer
 
 #### Using the environment
 
@@ -145,3 +142,6 @@ After a few minutes the load balancer will be available and you can see the IP a
   kubernetes   ClusterIP      10.1.0.1     <none>           443/TCP        12h
   mynginx      LoadBalancer   10.1.0.220   51.145.183.111   80:30432/TCP   2m
   ```
+
+  ### Load Balancer
+  See details and examples for exposing your workloads with Azure LoadBalancer in [azure-loadbalancer.md](../../docs/azure-loadbalancer.md)

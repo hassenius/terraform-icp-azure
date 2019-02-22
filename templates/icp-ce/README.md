@@ -95,6 +95,9 @@ boot = {
 }
 ```
 
-#### Using the environment
+### Using the environment
 
 Follow the instructions outlined [here](../../README.md)
+
+### Load Balancer
+See details and examples for exposing your workloads with Azure LoadBalancer in [azure-loadbalancer.md](../../docs/azure-loadbalancer.md)
