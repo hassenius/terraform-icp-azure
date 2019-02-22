@@ -48,13 +48,13 @@ The following diagram outlines the infrastructure architecture.
 |management|{'vm_size':'Standard_A4_v2'<br>'nodes':1<br>'name':'mgmt'}|No | Management node instance configuration|
 |proxy|{'vm_size':'Standard_A4_v2'<br>'nodes':1<br>'name':'proxy'}|No| Proxy node instance configuration |
 |worker |{'vm_size':'Standard_A4_v2'<br>'nodes':3<br>'name':'worker'}|No| Worker node instance configuration |
-|os_image            |ubuntu         |No      |Select from Ubuntu (ubuntu) or RHEL (rhel) for the Operating System|
+|os_image            |ubuntu         |No      |Select from Ubuntu (ubuntu) or RHEL (rhel) for the Operating System. Details on RHEL [here](../../doc/rhel.md)|
 |admin_username      |vmadmin        |No      |linux vm administrator user name        |
 | *Azure network settings*| | |
 |virtual_network_name|vnet           |No      |The name for the virtual network.       |
 |route_table_name    |icp_route      |No      |The name for the route table.           |
 | * ICP Settings * | | | |
-|cluster_name        |myicp          |No      |Deployment name for resources prefix    |
+|cluster_name        |myicp          |No      |Deployment name for resources prefix. Will form part of DNS names, so must only contain alphanumeric characters and -    |
 |ssh_public_key      |               |No      |SSH Public Key to add to authorized_key for admin_username. Required if you disable password authentication |
 |disable_password_authentication|true           |No      |Whether to enable or disable ssh password authentication for the created Azure VMs. Default: true|
 |icp_version         |3.1.2          |No      |ICP Version                             |
@@ -80,24 +80,13 @@ worker = {
   "nodes" = 4
 }
 ```
+
 #### Red Hat support
-This automation relies heavily on cloud-init for configuring and preparing the cluster after the VMs have been created.
-Azure has created a cloud-init enabled RHEL image, with the SKU `7-RAW-CI`.
-To simplify the process of doing the installation, you are required to use Ubuntu for the boot node, since Docker-CE is available to install from docker repositories.
-This will bootstrap the cluster installation process and the IBM provided docker package for Red Hat will be installed on the RHEL cluster nodes.
-
-To enable this configuration, add the following to your `terraform.tfvars`
-
-```
-os_image = "rhel"
-boot = {
-  nodes = 1
-}
-```
+Details on RHEL support [here](../../doc/rhel.md)
 
 ### Using the environment
 
 Follow the instructions outlined [here](../../README.md)
 
-### Load Balancer
+#### Using the Azure Loadbalancer
 See details and examples for exposing your workloads with Azure LoadBalancer in [azure-loadbalancer.md](../../docs/azure-loadbalancer.md)

@@ -82,7 +82,7 @@ variable "os_image_map" {
   default = {
     rhel_publisher   = "RedHat"
     rhel_offer       = "RHEL"
-    rhel_sku         = "7.4"
+    rhel_sku         = "7-RAW-CI"
     rhel_version     = "latest"
     ubuntu_publisher = "Canonical"
     ubuntu_offer     = "UbuntuServer"
