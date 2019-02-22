@@ -10,10 +10,10 @@ data "azurerm_client_config" "client_config" {}
 module "icpprovision" {
   source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.7"
 
-  bastion_host = "${element(concat(azurerm_public_ip.bootnode_pip.*.ip_address, azurerm_public_ip.master_pip.*.ip_address), 0)}"
+  bastion_host = "${element(concat(azurerm_public_ip.bootnode_pip.*.ip_address, azurerm_public_ip.master_pip.*.ip_address, list("")), 0)}"
 
   # Provide IP addresses for boot, master, mgmt, va, proxy and workers
-  boot-node = "${element(concat(azurerm_network_interface.boot_nic.*.private_ip_address, azurerm_network_interface.master_nic.*.private_ip_address), 0)}"
+  boot-node = "${element(concat(azurerm_network_interface.boot_nic.*.private_ip_address, azurerm_network_interface.master_nic.*.private_ip_address, list("")), 0)}"
 
   icp-host-groups = {
     master      = ["${azurerm_network_interface.master_nic.*.private_ip_address}"]
@@ -85,8 +85,8 @@ module "icpprovision" {
           "aadClientId"         = "${var.aadClientId}"
           "aadClientSecret"     = "${var.aadClientSecret}"
           "location"            = "${azurerm_resource_group.icp.location}"
-          "subnetName"          = "${azurerm_subnet.container_subnet.name}"
-          "vnetName"            = "${azurerm_virtual_network.icp_vnet.name}"
+          "subnetName"          = "${element(compact(concat(list("${var.container_subnet_id}"), azurerm_subnet.container_subnet.*.id)), 0)}"
+          "vnetName"            = "${var.virtual_network_name}"
           "vnetResourceGroup"   = "${azurerm_resource_group.icp.name}"
           "routeTableName"      = "${azurerm_route_table.routetb.name}"
           "cloudProviderBackoff"        = "false"
