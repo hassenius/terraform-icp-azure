@@ -3,13 +3,9 @@ language: go
 os:
   - linux
 
-gobuild_args: "-timeout 120m -run TestTerraformICP"
-
-before_script:
-  - git clone https://github.com/bats-core/bats-core.git /tmp/bats
-  - mkdir -p /tmp/local
-  - bash /tmp/bats/install.sh /tmp/local
-  - export PATH=$PATH:/tmp/local/bin
+env:
+  - TEST_TFDIR="templates/icp-ce"
+  - TEST_TFVARS="terraform.tfvars"
 
 script:
   - cd tests && bats .
