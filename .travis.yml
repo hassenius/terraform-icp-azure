@@ -7,7 +7,7 @@ gobuild_args: ""
 
 
 env:
-  - TEST_TFDIR="templates/icp-ce"
+  - TEST_TFDIR="../templates/icp-ce"
   - TEST_TFVARS="terraform.tfvars"
 
 script:
