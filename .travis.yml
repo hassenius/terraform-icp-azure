@@ -7,8 +7,7 @@ gobuild_args: ""
 
 
 env:
-  - TEST_TFDIR="../templates/icp-ce"
-  - TEST_TFVARS="terraform-small-subnet-example.tfvars"
+  - TEST_TFDIR="../templates/icp-ce" TEST_TFVARS="terraform-small-subnet-example.tfvars"
 
 script:
   - cd tests && bats .
