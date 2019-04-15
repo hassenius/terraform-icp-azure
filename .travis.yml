@@ -1,0 +1,30 @@
+dist: xenial
+language: go
+os:
+  - linux
+
+gobuild_args: "-timeout 120m -run TestTerraformICP"
+
+before_script:
+  - git clone https://github.com/bats-core/bats-core.git /tmp/bats
+  - mkdir -p /tmp/local
+  - bash /tmp/bats/install.sh /tmp/local
+  - export PATH=$PATH:/tmp/local/bin
+
+script:
+  - cd tests && bats .
+
+before_install:
+#  # Later we will want to figure out which template that changed and only change that
+# - |
+#     if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
+#       TRAVIS_COMMIT_RANGE="FETCH_HEAD...$TRAVIS_BRANCH"
+#     fi
+#     ## Probably use this instead now: CHANGED_FILES=($(git diff --name-only $TRAVIS_COMMIT_RANGE))
+#     git diff --name-only $TRAVIS_COMMIT_RANGE | grep -qvE '(\.md$)|(^(docs|examples))/' || {
+#       echo "Only docs were updated, stopping build process."
+#       exit
+#     }
+
+script:
+  - go test -timeout 120m -run TestTerraformICP ./test/
