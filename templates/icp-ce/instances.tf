@@ -111,10 +111,10 @@ resource "azurerm_virtual_machine" "boot" {
 
   os_profile_linux_config {
     disable_password_authentication = "${var.disable_password_authentication}"
-    ssh_keys = ["${var.ssh_public_key == "" ? map() : map(
-      "key_data", "${var.ssh_public_key}",
-      "path", "/home/${var.admin_username}/.ssh/authorized_keys"
-    )}"]
+    ssh_keys {
+      key_data = "${var.ssh_public_key}"
+      path = "/home/${var.admin_username}/.ssh/authorized_keys"
+    }
   }
 }
 
@@ -157,10 +157,10 @@ resource "azurerm_virtual_machine" "master" {
 
   os_profile_linux_config {
     disable_password_authentication = "${var.disable_password_authentication}"
-    ssh_keys = ["${var.ssh_public_key == "" ? map() : map(
-      "key_data", "${var.ssh_public_key}",
-      "path", "/home/${var.admin_username}/.ssh/authorized_keys"
-    )}"]
+    ssh_keys {
+      key_data = "${var.ssh_public_key}"
+      path = "/home/${var.admin_username}/.ssh/authorized_keys"
+    }
   }
 }
 
@@ -203,10 +203,10 @@ resource "azurerm_virtual_machine" "proxy" {
 
   os_profile_linux_config {
     disable_password_authentication = "${var.disable_password_authentication}"
-    ssh_keys = ["${var.ssh_public_key == "" ? map() : map(
-      "key_data", "${var.ssh_public_key}",
-      "path", "/home/${var.admin_username}/.ssh/authorized_keys"
-    )}"]
+    ssh_keys {
+      key_data = "${var.ssh_public_key}"
+      path = "/home/${var.admin_username}/.ssh/authorized_keys"
+    }
   }
 }
 
@@ -248,10 +248,10 @@ resource "azurerm_virtual_machine" "management" {
 
   os_profile_linux_config {
     disable_password_authentication = "${var.disable_password_authentication}"
-    ssh_keys = ["${var.ssh_public_key == "" ? map() : map(
-      "key_data", "${var.ssh_public_key}",
-      "path", "/home/${var.admin_username}/.ssh/authorized_keys"
-    )}"]
+    ssh_keys {
+      key_data = "${var.ssh_public_key}"
+      path = "/home/${var.admin_username}/.ssh/authorized_keys"
+    }
   }
 }
 
@@ -296,9 +296,9 @@ resource "azurerm_virtual_machine" "worker" {
 
   os_profile_linux_config {
     disable_password_authentication = "${var.disable_password_authentication}"
-    ssh_keys = ["${var.ssh_public_key == "" ? map() : map(
-      "key_data", "${var.ssh_public_key}",
-      "path", "/home/${var.admin_username}/.ssh/authorized_keys"
-    )}"]
+    ssh_keys {
+      key_data = "${var.ssh_public_key}"
+      path = "/home/${var.admin_username}/.ssh/authorized_keys"
+    }
   }
 }
