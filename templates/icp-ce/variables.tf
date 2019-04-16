@@ -87,6 +87,11 @@ variable "ssh_public_key" {
     default = ""
 }
 
+variable "ssh_agent" {
+    description = "Enable or disable ssh agent for terraform communication to cluster during setup"
+    default     = false
+}
+
 variable "disable_password_authentication" {
   description = "Whether to enable or disable ssh password authentication for the created Azure VMs. Default: true"
   default     = "true"
