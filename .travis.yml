@@ -1,0 +1,51 @@
+dist: xenial
+language: minimal
+
+os:
+  - linux
+
+env:
+  global:
+  - TERRAFORM_VER="0.11.13"
+  - TF_VAR_default_tags='{Owner = "TravisCI", Product = "ICP"}'
+  - TF_VAR_resource_group="icp_ci_${TRAVIS_BUILD_NUMBER}"
+  matrix:
+    # CE with small subnet
+    - TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ce"
+      TERRAFORM_VARS_FILE: "${TERRAFORM_DIR}/terraform-small-subnet-example.tfvars"
+    # EE AS with small subnet
+    - TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ee-as"
+      TERRAFORM_VARS_FILE: "${TERRAFORM_DIR}/terraform-small-subnet-example.tfvars"
+    # EE AZ with small subet
+    - TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ee-az"
+      TERRAFORM_VARS_FILE: "${TERRAFORM_DIR}/terraform-small-subnet-example.tfvars"
+
+
+# Install Azure CLI
+before_install:
+  - AZ_REPO=$(lsb_release -cs) && echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | sudo tee /etc/apt/sources.list.d/azure-cli.list
+  - curl -L https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+  - sudo apt-get install apt-transport-https
+  - sudo apt-get update && sudo apt-get install azure-cli
+
+# Init the build harness
+before_script:
+  - make init
+
+  # Deploy the environment if changes in the relevant template
+script:
+  - |
+      if ! git diff --name-only $TRAVIS_COMMIT_RANGE | grep -E "$(basename ${TERRAFORM_DIR})/(.*.tf)|(.*.tfvars)"
+      then
+        echo "No changes in templates for or example tfvars in $(basename ${TERRAFORM_DIR}), just doing basic syntax validation."
+        make validate-tf
+      else
+        make deploy-icp
+        make validate-icp
+        export AZURE_RESOURCE_GROUP=${TF_VAR_resource_group}
+        make cleanup  # Do quick delete instead of tf destroy
+      fi
+
+# If the terraform deploy fails, some rubbish will be left over in Azure. Clean that up
+after_failure:
+  - export AZURE_RESOURCE_GROUP=${TF_VAR_resource_group} ; make cleanup
