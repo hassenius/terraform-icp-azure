@@ -1,6 +1,6 @@
 # Define build harness branch
-BUILD_HARNESS_ORG = hans-moen
-BUILD_HARNESS_BRANCH = azurecli
+BUILD_HARNESS_ORG = ICP-DevOps
+BUILD_HARNESS_BRANCH = master
 
 # Define the Azure template settings
 export AZURE_RESOURCE_GROUP ?= $(TF_VAR_resource_group)
@@ -12,6 +12,11 @@ TERRAFORM_VARS_FILE ?=
 # GITHUB_USER containing '@' char must be escaped with '%40'
 GITHUB_USER := $(shell echo $(GITHUB_USER) | sed 's/@/%40/g')
 GITHUB_TOKEN ?=
+
+# There are many permutations of templates and tfvar example files.
+# Only run the templates that has changes
+DO_DEPLOY ?= $(shell git diff --name-only $(TRAVIS_COMMIT_RANGE) | grep -q -E "$(shell basename $(TERRAFORM_DIR))/(.*.tf)|(.*.tfvars)" && echo yes || echo no)
+
 
 .PHONY: default
 default:: init;
@@ -45,6 +50,15 @@ endif
 validate-tf:
 	@$(SELF) -s terraform:validate TERRAFORM_VARS_FILE=$(TERRAFORM_VARS_FILE) TERRAFORM_DIR=$(TERRAFORM_DIR)
 
+.PHONY: deploy-icp-if-tfchange
+deploy-icp-if-tfchange:
+	git diff --name-only $(TRAVIS_COMMIT_RANGE)
+ifeq "$(DO_DEPLOY)" "no"
+	$(info No changes in templates for or example tfvars in $(basename $(TERRAFORM_DIR)), just doing basic syntax validation.)
+	$(SELF) validate-tf
+else
+		$(SELF) deploy-icp
+endif
 
 .PHONY: deploy-icp
 ## Deploy a given terraform template directory with a given terraform VARS file
@@ -53,7 +67,18 @@ deploy-icp:
 
 .PHONY: validate-icp
 validate-icp:
-	echo "This is where we should run some proper validation"
+ifeq "$(DO_DEPLOY)" "no"
+	$(info ICP Not deployed, skipping validation tests)
+else ifeq "$(TRAVIS_TEST_RESULT)" "1"
+	$(error Will not run validation on failed deployment)
+else
+	$(info Running validation test)
+	@export SERVER=$(shell $(SELF) -s terraform:output TERRAFORM_OUTPUT_VAR=icp_console_server) ; \
+	export USERNAME=$(shell $(SELF) -s terraform:output TERRAFORM_OUTPUT_VAR=icp_admin_username) ; \
+	export PASSWORD=$(shell $(SELF) -s terraform:output TERRAFORM_OUTPUT_VAR=icp_admin_password) ; \
+	$(SELF) -s validateicp:runall
+endif
+
 
 .PHONY: cleanup
 ## Delete a given Azure Resource Group

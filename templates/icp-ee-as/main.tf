@@ -10,8 +10,12 @@ provider "azurerm" { }
 ##################################
 ## Create a resource group
 ##################################
+locals {
+  resource_group_suffix = "${var.resource_group_suffix == "random" ? random_id.clusterid.id : var.resource_group_suffix}"
+}
+
 resource "azurerm_resource_group" "icp" {
-  name     = "${var.resource_group}_${random_id.clusterid.id}"
+  name     = "${var.resource_group}${local.resource_group_suffix}"
   location = "${var.location}"
 
   tags = "${merge(

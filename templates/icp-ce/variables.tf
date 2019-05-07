@@ -21,10 +21,14 @@ variable "default_tags" {
   }
 }
 
-
 variable "resource_group" {
   description = "Azure resource group name"
   default = "icp_rg"
+}
+
+variable "resource_group_suffix" {
+  description = "Suffix to append to resource group name. 'random' generates a random ID."
+  default = "random"
 }
 
 variable "container_subnet_id" {
@@ -85,6 +89,11 @@ variable "storage_replication_type" {
 variable "ssh_public_key" {
     description = "SSH Public Key"
     default = ""
+}
+
+variable "ssh_agent" {
+    description = "Enable or disable ssh agent for terraform communication to cluster during setup"
+    default     = false
 }
 
 variable "disable_password_authentication" {

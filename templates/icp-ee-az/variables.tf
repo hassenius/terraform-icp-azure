@@ -31,6 +31,11 @@ variable "resource_group" {
   default = "icp_rg"
 }
 
+variable "resource_group_suffix" {
+  description = "Suffix to append to resource group name. 'random' generates a random ID."
+  default = "random"
+}
+
 variable "container_subnet_id" {
   description = "ID of container subnet if using existing VNET. Only when var.virtual_network_name is empty "
   default = ""

@@ -131,3 +131,15 @@ module "icpprovision" {
   ssh_key_base64   = "${base64encode(tls_private_key.installkey.private_key_pem)}"
 
 }
+
+output "icp_admin_username" {
+  value = "admin"
+}
+
+output "icp_admin_password" {
+  value = "${module.icpprovision.default_admin_password}"
+}
+
+output "cloudctl" {
+  value = "cloudctl login --skip-ssl-validation -a https://${element(azurerm_public_ip.master_pip.*.fqdn, 0)}:8443 -u admin -p ${module.icpprovision.default_admin_password} -n default -c id-${var.cluster_name}-account"
+}

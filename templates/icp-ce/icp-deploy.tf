@@ -53,7 +53,7 @@ module "icpprovision" {
     "cloud_provider"            = "azure"
 
     # Azure specific arguments
-    "kube_controller_manager_extra_args" = ["--allocate-node-cidrs=true", "--feature-gates=ServiceNodeExclusion=true"]
+    "kube_controller_manager_extra_args" = ["--allocate-node-cidrs=true", "--feature-gates=ServiceNodeExclusion=true", "--node-cidr-mask-size=26"]
     "kubelet_extra_args" = ["--enable-controller-attach-detach=true"]
 
     # Azure specific configurations
@@ -107,5 +107,14 @@ module "icpprovision" {
 
   ssh_user         = "icpdeploy"
   ssh_key_base64   = "${base64encode(tls_private_key.installkey.private_key_pem)}"
+  ssh_agent        = "${var.ssh_agent}"
 
+}
+
+output "icp_admin_password" {
+  value = "${module.icpprovision.default_admin_password}"
+}
+
+output "cloudctl" {
+  value = "cloudctl login --skip-ssl-validation -a https://${element(azurerm_public_ip.master_pip.*.fqdn, 0)}:8443 -u admin -p ${module.icpprovision.default_admin_password} -n default -c id-${var.cluster_name}-account"
 }

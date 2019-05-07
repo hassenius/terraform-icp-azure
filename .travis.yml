@@ -8,17 +8,44 @@ env:
   global:
   - TERRAFORM_VER="0.11.13"
   - TF_VAR_default_tags='{Owner = "TravisCI", Product = "ICP"}'
-  - TF_VAR_resource_group="icp_ci_${TRAVIS_BUILD_NUMBER}"
+  - TF_VAR_resource_group="icp_ci_${TRAVIS_JOB_ID}"
+  - TF_VAR_resource_group_suffix=""
+  - REG_IMAGE="ibmcom-amd64/icp-inception:3.1.2-ee"
+  - ICP_VALIDATION_BRANCH="minimal"
   matrix:
+    ## Community Edition Builds
     # CE with small subnet
-    - TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ce"
+    - NAME: "CE with small subnet"
+      TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ce"
       TERRAFORM_VARS_FILE: "${TERRAFORM_DIR}/terraform-small-subnet-example.tfvars"
+    # Separate control plane subnet
+    - NAME: "CE with separate controlplane subnet"
+      TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ce"
+      TERRAFORM_VARS_FILE: "${TERRAFORM_DIR}/terraform-separate-controlplane-subnet-example.tfvars"
+    # Existing VNET
+    - NAME: "CE with existing vnet"
+      TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ce"
+      TERRAFORM_VARS_FILE: "${TERRAFORM_DIR}/terraform-existing-vnet-example.tfvars"
+    # Minimal example
+    - NAME: "CE minimal example"
+      TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ce"
+      TERRAFORM_VARS_FILE: "${TERRAFORM_DIR}/terraform-minimal-example.tfvars"
+    ## Enterprise Edition with Azure Availability Set builds
     # EE AS with small subnet
-    - TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ee-as"
-      TERRAFORM_VARS_FILE: "${TERRAFORM_DIR}/terraform-small-subnet-example.tfvars"
-    # EE AZ with small subet
-    - TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ee-az"
-      TERRAFORM_VARS_FILE: "${TERRAFORM_DIR}/terraform-small-subnet-example.tfvars"
+    # - TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ee-as"
+    #   TERRAFORM_VARS_FILE: "${TERRAFORM_DIR}/terraform-separate-controlplane-subnet-example.tfvars"
+    #   TF_VAR_registry_username: "${REG_USER}"
+    #   TF_VAR_registry_password: "${REG_PASSWD}"
+    #   TF_VAR_private_registry: "${REG_SERVER}"
+    #   TF_VAR_icp_inception_image: "${REG_IMAGE}"
+    # ## Enterprise Edition with Azure Availability Zones builds
+    # # EE AZ with small subet
+    # - TERRAFORM_DIR: "${TRAVIS_BUILD_DIR}/templates/icp-ee-az"
+    #   TERRAFORM_VARS_FILE: "${TERRAFORM_DIR}/terraform-separate-controlplane-subnet-example.tfvars"
+    #   TF_VAR_registry_username: "${REG_USER}"
+    #   TF_VAR_registry_password: "${REG_PASSWD}"
+    #   TF_VAR_private_registry: "${REG_SERVER}"
+    #   TF_VAR_icp_inception_image: "${REG_IMAGE}"
 
 
 # Install Azure CLI
@@ -34,18 +61,9 @@ before_script:
 
   # Deploy the environment if changes in the relevant template
 script:
-  - |
-      if ! git diff --name-only $TRAVIS_COMMIT_RANGE | grep -E "$(basename ${TERRAFORM_DIR})/(.*.tf)|(.*.tfvars)"
-      then
-        echo "No changes in templates for or example tfvars in $(basename ${TERRAFORM_DIR}), just doing basic syntax validation."
-        make validate-tf
-      else
-        make deploy-icp
-        make validate-icp
-        export AZURE_RESOURCE_GROUP=${TF_VAR_resource_group}
-        make cleanup  # Do quick delete instead of tf destroy
-      fi
+  - make deploy-icp-if-tfchange
+  - make validate-icp
 
-# If the terraform deploy fails, some rubbish will be left over in Azure. Clean that up
-after_failure:
+# When everything has completed we can clean up the environment
+after_script:
   - export AZURE_RESOURCE_GROUP=${TF_VAR_resource_group} ; make cleanup
