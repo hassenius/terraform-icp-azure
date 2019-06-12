@@ -1,0 +1,101 @@
+# To successfully complete end-to-end tests including deployment
+# some variables need to be defined in the CircleCI environment
+#
+# BACKEND_SA     - The backend storage account to use for the terraform state backend
+# BACKEND_CN     - The container name to use for the terraform state backend
+# ARM_ACCESS_KEY - Access key to access the terraform state backend
+# ARM_CLIENT_ID  - Service Principal for deploying resources
+# ARM_TENANT_ID  - TenantID to provision resources in
+# ARM_CLIENT_SECRET   - Secret for the Service Principal
+# ARM_SUBSCRIPTION_ID - Subscriptinon to provision resources in
+
+version: 2.1
+commands:
+  # CircleCI generally only triggers builds on commits to the main repository,
+  # so PRs coming from branches of the main repo simply reference builds for existing commits
+  # (CIRCLE_BRANCH=branchname and CIRCLE_PR_NUMBER is unset);
+  # The only time PRs will trigger a build is when the PR is referencing a fork
+  # (CIRCLE_BRANCH=pull/XXX and CIRCLE_PR_NUMBER=XXX).
+  early_return_for_forked_pull_requests:
+    description: >-
+      If this build is from a fork, stop executing the current job and return success.
+      This is useful to avoid steps that will fail due to missing credentials.
+    steps:
+      - run:
+          name: Early return if this build is from a forked PR
+          command: |
+            if [ -n "$CIRCLE_PR_NUMBER" ]; then
+              echo "Will not deploy PRs, so marking this step successful"
+              circleci step halt
+            fi
+jobs:
+  build:
+    docker:
+      - image: hassenius/terraform:0.11.14-azcli
+    parameters:
+      tfvarsfile:
+        type: string
+        default: notspecified
+      templatedir:
+        type: string
+        default: notspecified
+    environment:
+      - TF_VAR_default_tags: '{Owner = "CircleCI", Product = "ICP"}'
+      - rg_basename: icp-cideploy
+    steps:
+      - checkout
+      - run:
+          name: terraform syntax validation
+          command: terraform validate -check-variables=false
+      - early_return_for_forked_pull_requests
+      - run:
+          working_directory: << parameters.templatedir >>
+          name: Make backend for << parameters.templatedir >> << parameters.tfvarsfile >>
+          command: |
+            cat \<<EOF > backend_override.tf
+              terraform {
+                backend "azurerm" {
+                  storage_account_name = "${BACKEND_SA}"
+                  container_name       = "${BACKEND_CN}"
+                  key                  = "${CIRCLE_BUILD_NUM}-<< parameters.templatedir >>-<< parameters.tfvarsfile >>.tfstate"
+                }
+              }
+            EOF
+            cat \<<EOF > backend_override.tf
+              terraform {
+                  backend "s3" {
+                    bucket = "${tfstatebucket}"
+                    key    = "${tfstatedir}/${CIRCLE_BUILD_NUM}<< parameters.tfvarsfile >>.tfstate"
+                    region = "${tfstateregion}"
+                  }
+                }
+            EOF
+      - run:
+          name: terraform init
+          command: terraform init
+          working_directory: << parameters.templatedir >>
+      - run:
+          name: terraform plan
+          command: terraform plan -var-file=<< parameters.tfvarsfile >> -var "resource_group=${rg_basename}_${CIRCLE_BUILD_NUM}_${CIRCLE_NODE_INDEX}" -out=mybuild
+          working_directory: << parameters.templatedir >>
+      - run:
+          name: terraform apply
+          command: terraform apply "mybuild"
+          working_directory: << parameters.templatedir >>
+      - run:
+          name: Destroy the resource group
+          command: az group delete --name ${rg_basename}_${CIRCLE_BUILD_NUM}_${CIRCLE_NODE_INDEX} --yes $AZURECLI_NOWAIT
+          working_directory: << parameters.templatedir >>
+          when: always
+workflows:
+  workflow:
+    jobs:
+      - build:
+          tfvarsfile: terraform-existing-vnet-example.tfvars
+          templatedir: templates/icp-ce
+      # - build:
+      #     requires:
+      #       - build
+      #     tfvarsfile: terraform-separate-controlplane-subnet-example.tfvars
+      #     templatedir: templates/icp-ce
+      # Repeated as many times as there are configurations...
