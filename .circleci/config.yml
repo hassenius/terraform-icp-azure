@@ -95,7 +95,7 @@ jobs:
           name: Destroy the resource group
           command: |
             az login --service-principal --username $ARM_CLIENT_ID --password $ARM_CLIENT_SECRET --tenant $ARM_TENANT_ID
-            az group delete --name ${TF_VAR_resource_group}_${CIRCLE_BUILD_NUM}_${CIRCLE_NODE_INDEX} --yes $AZURECLI_NOWAIT
+            az group delete --name ${TF_VAR_resource_group}${CIRCLE_BUILD_NUM}_${CIRCLE_NODE_INDEX} --yes $AZURECLI_NOWAIT
           working_directory: << parameters.templatedir >>
           when: always
 workflows:
