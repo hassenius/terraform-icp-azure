@@ -44,10 +44,16 @@ jobs:
       - rg_basename: icp-cideploy
     steps:
       - checkout
+      - run: export | grep CIRCLE
       - run:
           name: terraform syntax validation
           command: terraform validate -check-variables=false
+          working_directory: << parameters.templatedir >>
       - early_return_for_forked_pull_requests
+      - run:
+          name: test
+          command: export | grep CIRCLE
+          working_directory: << parameters.templatedir >>
       - run:
           working_directory: << parameters.templatedir >>
           name: Make backend for << parameters.templatedir >> << parameters.tfvarsfile >>
