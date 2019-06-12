@@ -104,9 +104,19 @@ workflows:
       - build:
           tfvarsfile: terraform-existing-vnet-example.tfvars
           templatedir: templates/icp-ce
-      # - build:
-      #     requires:
-      #       - build
-      #     tfvarsfile: terraform-separate-controlplane-subnet-example.tfvars
-      #     templatedir: templates/icp-ce
+      - build:
+          requires:
+            - build
+          tfvarsfile: terraform-separate-controlplane-subnet-example.tfvars
+          templatedir: templates/icp-ce
+      - build:
+          requires:
+            - build
+          tfvarsfile: terraform-minimal-example.tfvars
+          templatedir: templates/icp-ce
+        - build:
+            requires:
+              - build
+            tfvarsfile: terraform-small-subnet-example.tfvars
+            templatedir: templates/icp-ce
       # Repeated as many times as there are configurations...
