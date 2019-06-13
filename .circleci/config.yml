@@ -114,9 +114,9 @@ workflows:
             - build
           tfvarsfile: terraform-minimal-example.tfvars
           templatedir: templates/icp-ce
-        - build:
-            requires:
-              - build
-            tfvarsfile: terraform-small-subnet-example.tfvars
-            templatedir: templates/icp-ce
+      - build:
+          requires:
+            - build
+          tfvarsfile: terraform-small-subnet-example.tfvars
+          templatedir: templates/icp-ce
       # Repeated as many times as there are configurations...
