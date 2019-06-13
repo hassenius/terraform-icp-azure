@@ -1,0 +1,148 @@
+# To successfully complete end-to-end tests including deployment
+# some variables need to be defined in the CircleCI environment
+#
+# BACKEND_SA     - The backend storage account to use for the terraform state backend
+# BACKEND_CN     - The container name to use for the terraform state backend
+# ARM_ACCESS_KEY - Access key to access the terraform state backend
+# ARM_CLIENT_ID  - Service Principal for deploying resources
+# ARM_TENANT_ID  - TenantID to provision resources in
+# ARM_CLIENT_SECRET   - Secret for the Service Principal
+# ARM_SUBSCRIPTION_ID - Subscriptinon to provision resources in
+# TF_VAR_aadClientId  - Service Principal for Kubernetes Azure Cloud Provider
+# TF_VAR_aadClientSecret - Service Principal for Kubernetes Azure Cloud Provider
+# TF_VAR_ssh_public_key  - The public key corresponding to the private key held by CircleCI
+#                           More info here: https://circleci.com/docs/2.0/add-ssh-key/
+#
+version: 2.1
+commands:
+  # CircleCI generally only triggers builds on commits to the main repository,
+  # so PRs coming from branches of the main repo simply reference builds for existing commits
+  # (CIRCLE_BRANCH=branchname and CIRCLE_PR_NUMBER is unset);
+  # The only time PRs will trigger a build is when the PR is referencing a fork
+  # (CIRCLE_BRANCH=pull/XXX and CIRCLE_PR_NUMBER=XXX).
+  early_return_for_forked_pull_requests:
+    description: >-
+      If this build is from a fork, stop executing the current job and return success.
+      This is useful to avoid steps that will fail due to missing credentials.
+    steps:
+      - run:
+          name: Early return if this build is from a forked PR
+          command: |
+            if [ -n "$CIRCLE_PR_NUMBER" ]; then
+              echo "Will not deploy PRs, so marking this step successful"
+              circleci step halt
+            fi
+  early_return_for_unchanged_templates:
+    description: >-
+      Only build templates that has been modified. This ensures that documentation changes,
+      and changes to other template directories do not trigger a full system rebuild, which
+      can take hours, just to get the result of the affected changes.
+    parameters:
+      tfvarsfile:
+        type: string
+        default: notspecified
+      templatedir:
+        type: string
+        default: notspecified
+    steps:
+      - run:
+          name: Early return if neither << parameters.templatedir >> nor << parameters.tfvarsfile >> affected by changes
+          command: |
+            # Changes to .tf should trigger build for all .tfvars, changes in .tfvar should only trigger that run
+            set +eo pipefail
+            changeset=$(git diff --name-only origin/master)
+            relevant_changes=$(echo "$changeset" | grep -E "<< parameters.templatedir >>/(.*.tf)|(<< parameters.tfvarsfile >>)")
+            if [[ -n "${relevant_changes}" ]]; then
+              echo "Found relevant changes in changeset"
+              echo "${relevant_changes}"
+              echo "Will perform full build"
+            else
+              echo "Will not deploy commits not affecting this configuration"
+              echo "${changeset}"
+              circleci step halt
+            fi
+jobs:
+  build:
+    docker:
+      # We're using a simple custom built image that adds azure cli the hashicorp/terraform:0.11.14 base
+      - image: hassenius/terraform:0.11.14-azcli
+    parameters:
+      tfvarsfile:
+        type: string
+        default: notspecified
+      templatedir:
+        type: string
+        default: notspecified
+    environment:
+      - TF_VAR_default_tags: '{Owner = "CircleCI", Product = "ICP"}'
+      - TF_VAR_resource_group: icp-cideploy
+    steps:
+      - checkout
+      - run:
+          name: terraform syntax validation
+          command: terraform validate -check-variables=false
+          working_directory: << parameters.templatedir >>
+      - early_return_for_forked_pull_requests
+      - early_return_for_unchanged_templates:
+          templatedir: << parameters.templatedir >>
+          tfvarsfile: << parameters.tfvarsfile >>
+      - run:
+          name: Make backend for << parameters.templatedir >> << parameters.tfvarsfile >>
+          command: |
+            cat \<<EOF > backend_override.tf
+              terraform {
+                backend "azurerm" {
+                  storage_account_name = "${BACKEND_SA}"
+                  container_name       = "${BACKEND_CN}"
+                  key                  = "${CIRCLE_BUILD_NUM}-<< parameters.templatedir >>-<< parameters.tfvarsfile >>.tfstate"
+                }
+              }
+            EOF
+          working_directory: << parameters.templatedir >>
+      - run:
+          name: terraform init
+          command: terraform init
+          working_directory: << parameters.templatedir >>
+      - run:
+          name: terraform plan
+          command: |
+            export TF_VAR_resource_group_suffix=${CIRCLE_BUILD_NUM}_${CIRCLE_NODE_INDEX}
+            terraform plan -var-file=<< parameters.tfvarsfile >> -out=mybuild
+          working_directory: << parameters.templatedir >>
+      - run:
+          name: terraform apply
+          command: terraform apply "mybuild"
+          working_directory: << parameters.templatedir >>
+      - run:
+          name: Destroy the resource group
+          command: |
+            az login --service-principal --username $ARM_CLIENT_ID --password $ARM_CLIENT_SECRET --tenant $ARM_TENANT_ID
+            az group delete --name ${TF_VAR_resource_group}${CIRCLE_BUILD_NUM}_${CIRCLE_NODE_INDEX} --yes $AZURECLI_NOWAIT
+          working_directory: << parameters.templatedir >>
+          when: always
+workflows:
+  workflow:
+    jobs:
+      - build:
+          name: ce-existing-vnet
+          tfvarsfile: terraform-existing-vnet-example.tfvars
+          templatedir: templates/icp-ce
+      - build:
+          name: ce-controlplane
+          requires:
+            - ce-existing-vnet
+          tfvarsfile: terraform-separate-controlplane-subnet-example.tfvars
+          templatedir: templates/icp-ce
+      - build:
+          name: ce-minimal
+          requires:
+            - ce-controlplane
+          tfvarsfile: terraform-minimal-example.tfvars
+          templatedir: templates/icp-ce
+      - build:
+          name: ce-smallsubnet
+          requires:
+            - ce-minimal
+          tfvarsfile: terraform-small-subnet-example.tfvars
+          templatedir: templates/icp-ce
+      # Repeated as many times as there are configurations...
