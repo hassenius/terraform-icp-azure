@@ -49,6 +49,7 @@ commands:
           name: Early return if neither << parameters.templatedir >> nor << parameters.tfvarsfile >> affected by changes
           command: |
             # Changes to .tf should trigger build for all .tfvars, changes in .tfvar should only trigger that run
+            set +eo pipefail
             changeset=$(git diff --name-only origin/master)
             relevant_changes=$(echo "$changeset" | grep -E "<< parameters.templatedir >>/(.*.tf)|(<< parameters.tfvarsfile >>)")
             if [[ -n "${relevant_changes}" ]]; then
