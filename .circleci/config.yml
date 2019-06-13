@@ -102,21 +102,25 @@ workflows:
   workflow:
     jobs:
       - build:
+          name: ce-existing-vnet
           tfvarsfile: terraform-existing-vnet-example.tfvars
           templatedir: templates/icp-ce
       - build:
+          name: ce-controlplane
           requires:
-            - build
+            - ce-existing-vnet
           tfvarsfile: terraform-separate-controlplane-subnet-example.tfvars
           templatedir: templates/icp-ce
       - build:
+          name: ce-minimal
           requires:
-            - build
+            - ce-controlplane
           tfvarsfile: terraform-minimal-example.tfvars
           templatedir: templates/icp-ce
       - build:
+          name: ce-smallsubnet
           requires:
-            - build
+            - ce-minimal
           tfvarsfile: terraform-small-subnet-example.tfvars
           templatedir: templates/icp-ce
       # Repeated as many times as there are configurations...
