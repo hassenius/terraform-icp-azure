@@ -12,7 +12,7 @@
 # TF_VAR_aadClientSecret - Service Principal for Kubernetes Azure Cloud Provider
 # TF_VAR_ssh_public_key  - The public key corresponding to the private key held by CircleCI
 #                           More info here: https://circleci.com/docs/2.0/add-ssh-key/
-
+#
 version: 2.1
 commands:
   # CircleCI generally only triggers builds on commits to the main repository,
@@ -32,9 +32,38 @@ commands:
               echo "Will not deploy PRs, so marking this step successful"
               circleci step halt
             fi
+  early_return_for_unchanged_templates:
+    description: >-
+      Only build templates that has been modified. This ensures that documentation changes,
+      and changes to other template directories do not trigger a full system rebuild, which
+      can take hours, just to get the result of the affected changes.
+    parameters:
+      tfvarsfile:
+        type: string
+        default: notspecified
+      templatedir:
+        type: string
+        default: notspecified
+    steps:
+      - run:
+          name: Early return if neither << parameters.templatedir >> nor << parameters.tfvarsfile >> affected by changes
+          command: |
+            # Changes to .tf should trigger build for all .tfvars, changes in .tfvar should only trigger that run
+            changeset=$(git diff --name-only origin/master)
+            relevant_changes=$(echo "$changeset" | grep -q -E "<< parameters.templatedir >> /(.*.tf)|(<< parameters.tfvarsfile >>)
+            if [[ -n "${relevant_changes}" ]]; then
+              echo "Found relevant changes in changeset"
+              echo "${relevant_changes}"
+              echo "Will perform full build"
+            else
+              echo "Will not deploy unaffected configurations"
+              echo "${changeset}"
+              circleci step halt
+            fi
 jobs:
   build:
     docker:
+      # We're using a simple custom built image that adds azure cli the hashicorp/terraform:0.11.14 base
       - image: hassenius/terraform:0.11.14-azcli
     parameters:
       tfvarsfile:
@@ -49,23 +78,14 @@ jobs:
     steps:
       - checkout
       - run:
-          name: without wd
-          command: |
-            export | grep CIRCLE
-            ls
-      - run:
           name: terraform syntax validation
           command: terraform validate -check-variables=false
           working_directory: << parameters.templatedir >>
       - early_return_for_forked_pull_requests
+      - early_return_for_unchanged_templates:
+          templatedir: << parameters.templatedir >>
+          tfvarsfile: << parameters.tfvarsfile >>
       - run:
-          name: test with wd
-          command: |
-            export | grep CIRCLE
-            ls
-          working_directory: << parameters.templatedir >>
-      - run:
-          working_directory: << parameters.templatedir >>
           name: Make backend for << parameters.templatedir >> << parameters.tfvarsfile >>
           command: |
             cat \<<EOF > backend_override.tf
@@ -77,6 +97,7 @@ jobs:
                 }
               }
             EOF
+          working_directory: << parameters.templatedir >>
       - run:
           name: terraform init
           command: terraform init
