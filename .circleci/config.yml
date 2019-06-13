@@ -50,7 +50,7 @@ commands:
           command: |
             # Changes to .tf should trigger build for all .tfvars, changes in .tfvar should only trigger that run
             changeset=$(git diff --name-only origin/master)
-            relevant_changes=$(echo "$changeset" | grep -q -E "<< parameters.templatedir >> /(.*.tf)|(<< parameters.tfvarsfile >>")
+            relevant_changes=$(echo "$changeset" | grep -q -E "<< parameters.templatedir >> /(.*.tf)|(<< parameters.tfvarsfile >>)"
             if [[ -n "${relevant_changes}" ]]; then
               echo "Found relevant changes in changeset"
               echo "${relevant_changes}"
