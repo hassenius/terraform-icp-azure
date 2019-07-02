@@ -37,9 +37,7 @@ Each template example provided is highly customizable, but are all configured wi
 3. Run `terraform init` in the selected template directory
 4. Run `terraform apply`
 
-Note: If you are using Terraform v0.12.xx you may get errors saying "Unsupported Argument". There are two choices to get around this issue:
-1. Use Terraform v0.11.xx
-2. Use Docker Terraform (https://hub.docker.com/r/hashicorp/terraform/), your command will look something like `docker run -v $(pwd):/deploy hashicorp/terraform:0.11.14 apply`
+Note: If you are using Terraform v0.12.xx you may get errors saying "Unsupported Argument". To fix this, you'll want to get v0.11.xx (https://releases.hashicorp.com/terraform/0.11.14/) and use that instead.
 
 You will be prompted by the azure provider to login to create a temporary token. To create a permanent service principal which does not time out and require re-authentication, follow these steps outlined in [Terraform docs](https://www.terraform.io/docs/providers/azurerm/authenticating_via_service_principal.html)
 
