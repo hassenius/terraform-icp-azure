@@ -82,9 +82,9 @@ resource "azurerm_virtual_machine" "boot" {
   }
 
   storage_data_disk {
-    name              = "${var.proxy["name"]}-dockerdisk-${count.index + 1}"
-    managed_disk_type = "${var.proxy["docker_disk_type"]}"
-    disk_size_gb      = "${var.proxy["docker_disk_size"]}"
+    name              = "${var.boot["name"]}-dockerdisk-${count.index + 1}"
+    managed_disk_type = "${var.boot["docker_disk_type"]}"
+    disk_size_gb      = "${var.boot["docker_disk_size"]}"
     caching           = "ReadWrite"
     create_option     = "Empty"
     lun               = 1
@@ -219,14 +219,14 @@ resource "azurerm_virtual_machine" "proxy" {
     create_option     = "FromImage"
   }
 
-  # storage_data_disk {
-  #   name              = "${var.proxy["name"]}-dockerdisk-${count.index + 1}"
-  #   managed_disk_type = "${var.proxy["docker_disk_type"]}"
-  #   disk_size_gb      = "${var.proxy["docker_disk_size"]}"
-  #   caching           = "ReadWrite"
-  #   create_option     = "Empty"
-  #   lun               = 1
-  # }
+  storage_data_disk {
+    name              = "${var.proxy["name"]}-dockerdisk-${count.index + 1}"
+    managed_disk_type = "${var.proxy["docker_disk_type"]}"
+    disk_size_gb      = "${var.proxy["docker_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 1
+  }
 
   os_profile {
     computer_name  = "${var.proxy["name"]}${count.index + 1}"
@@ -276,14 +276,14 @@ resource "azurerm_virtual_machine" "management" {
     create_option     = "FromImage"
   }
 
-  # storage_data_disk {
-  #   name              = "${var.management["name"]}-dockerdisk-${count.index + 1}"
-  #   managed_disk_type = "${var.management["docker_disk_type"]}"
-  #   disk_size_gb      = "${var.management["docker_disk_size"]}"
-  #   caching           = "ReadWrite"
-  #   create_option     = "Empty"
-  #   lun               = 1
-  # }
+  storage_data_disk {
+    name              = "${var.management["name"]}-dockerdisk-${count.index + 1}"
+    managed_disk_type = "${var.management["docker_disk_type"]}"
+    disk_size_gb      = "${var.management["docker_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 1
+  }
 
   os_profile {
     computer_name  = "${var.management["name"]}${count.index + 1}"
@@ -334,14 +334,14 @@ resource "azurerm_virtual_machine" "worker" {
     create_option     = "FromImage"
   }
 
-  # storage_data_disk {
-  #   name              = "${var.worker["name"]}-dockerdisk-${count.index + 1}"
-  #   managed_disk_type = "${var.worker["docker_disk_type"]}"
-  #   disk_size_gb      = "${var.worker["docker_disk_size"]}"
-  #   caching           = "ReadWrite"
-  #   create_option     = "Empty"
-  #   lun               = 1
-  # }
+  storage_data_disk {
+    name              = "${var.worker["name"]}-dockerdisk-${count.index + 1}"
+    managed_disk_type = "${var.worker["docker_disk_type"]}"
+    disk_size_gb      = "${var.worker["docker_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 1
+  }
 
   os_profile {
     computer_name  = "${var.worker["name"]}${count.index + 1}"

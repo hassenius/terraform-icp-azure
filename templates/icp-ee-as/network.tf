@@ -28,7 +28,8 @@ resource "azurerm_subnet" "subnet" {
 }
 
 resource "azurerm_subnet" "controlplane_subnet" {
-  count                = "${var.virtual_network_name == "" && var.controlplane_subnet_name == "" ?  0 : 1}"
+  # We will only create controlplane subnet if explicitly asked, and if we also create the VNET
+  count                = "${var.virtual_network_name == "" || var.controlplane_subnet_name == "" ?  0 : 1}"
   name                 = "${var.controlplane_subnet_name}"
   virtual_network_name = "${var.virtual_network_name}"
   resource_group_name  = "${azurerm_resource_group.icp.name}"
