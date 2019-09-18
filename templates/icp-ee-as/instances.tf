@@ -82,9 +82,9 @@ resource "azurerm_virtual_machine" "boot" {
   }
 
   storage_data_disk {
-    name              = "${var.proxy["name"]}-dockerdisk-${count.index + 1}"
-    managed_disk_type = "${var.proxy["docker_disk_type"]}"
-    disk_size_gb      = "${var.proxy["docker_disk_size"]}"
+    name              = "${var.boot["name"]}-dockerdisk-${count.index + 1}"
+    managed_disk_type = "${var.boot["docker_disk_type"]}"
+    disk_size_gb      = "${var.boot["docker_disk_size"]}"
     caching           = "ReadWrite"
     create_option     = "Empty"
     lun               = 1
