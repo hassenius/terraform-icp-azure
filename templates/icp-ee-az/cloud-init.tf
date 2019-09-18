@@ -1,8 +1,4 @@
-##############################################
-## Cloud-init definitions to be used when creating instances
-##############################################
 
-## Some common definitions that can be reused with different node types
 data "template_file" "common_config" {
   template = <<EOF
   #cloud-config
@@ -27,11 +23,16 @@ data "template_file" "docker_disk" {
 #!/bin/bash
 sudo mkdir -p /var/lib/docker
 # Check if we have a separate docker disk, or if we should use temporary disk
-if [ -e /dev/sdc ]; then
-  sudo parted -s -a optimal /dev/disk/azure/scsi1/lun1 mklabel gpt -- mkpart primary xfs 1 -1
+if [ -e /dev/disk/azure/*/lun1 ]; then
+  # Get the device name (should normally be sdc)
+  dockerdev=$(ls /dev/disk/azure/*/lun1)
+  sudo parted -s -a optimal $dockerdev mklabel gpt -- mkpart primary xfs 1 -1
   sudo partprobe
-  sudo mkfs.xfs -n ftype=1 /dev/disk/azure/scsi1/lun1-part1
-  echo "/dev/disk/azure/scsi1/lun1-part1  /var/lib/docker   xfs  defaults   0 0" | sudo tee -a /etc/fstab
+  sleep 3s
+  sudo mkfs.xfs -n ftype=1 $dockerdev-part1
+  # Get the UUID of the partition
+  echo "# Was $dockerdev-part1 at creation time" | sudo tee -a /etc/fstab
+  echo "UUID=$(blkid -s UUID -o value $dockerdev-part1) /var/lib/docker         xfs     defaults        0 0" | sudo tee -a /etc/fstab
 else
   # Use the temporary disk
   sudo umount /mnt
@@ -52,11 +53,14 @@ waldisk=$(ls /dev/disk/azure/*/lun3)
 sudo parted -s -a optimal $etcddisk mklabel gpt -- mkpart primary xfs 1 -1
 sudo parted -s -a optimal $waldisk mklabel gpt -- mkpart primary xfs 1 -1
 sudo partprobe
+sleep 3s
 
 sudo mkfs.xfs -n ftype=1 $etcddisk-part1
 sudo mkfs.xfs -n ftype=1 $waldisk-part1
-echo "$etcddisk-part1  /var/lib/etcd   xfs  defaults   0 0" | sudo tee -a /etc/fstab
-echo "$waldisk-part1  /var/lib/etcd-wal   xfs  defaults   0 0" | sudo tee -a /etc/fstab
+echo "# Was $etcddisk-part1 at creation time" | sudo tee -a /etc/fstab
+echo "UUID=$(blkid -s UUID -o value $etcddisk-part1)  /var/lib/etcd   xfs  defaults   0 0" | sudo tee -a /etc/fstab
+echo "# Was $waldisk-part1 at creation time" | sudo tee -a /etc/fstab
+echo "UUID=$(blkid -s UUID -o value $waldisk-part1)  /var/lib/etcd-wal   xfs  defaults   0 0" | sudo tee -a /etc/fstab
 
 sudo mount /var/lib/etcd
 sudo mount /var/lib/etcd-wal
@@ -138,7 +142,6 @@ data "template_cloudinit_config" "bootconfig" {
 
 }
 
-## Definitions for each VM type
 data "template_cloudinit_config" "masterconfig" {
   gzip          = true
   base64_encode = true
@@ -167,13 +170,13 @@ data "template_cloudinit_config" "masterconfig" {
     content      =  "${data.template_file.master_config.rendered}"
   }
 
-  # Load the ICP Images
-  part {
-    content_type = "text/x-shellscript"
-    content      = "${data.template_file.load_tarball.rendered}"
-  }
+  ### Don't load the tarball on masters for now
+  # # Load the ICP Images
+  # part {
+  #   content_type = "text/x-shellscript"
+  #   content      = "${data.template_file.load_tarball.rendered}"
+  # }
 }
-
 
 data "template_cloudinit_config" "workerconfig" {
   gzip          = true
